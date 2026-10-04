@@ -13,7 +13,7 @@ export async function GET(
       log = {
         date,
         weight_kg: null,
-        calories_target: profile.target_calories || 1950,
+        calories_target: profile.target_calories || 0,
         calories_consumed: 0,
         macros: { protein_g: 0, carbs_g: 0, fat_g: 0 },
         meals: [],

@@ -48,11 +48,14 @@ export async function POST(request: Request) {
       recommendedTarget = calculatedTdee + 250; // ~0.25kg/week
     }
 
-    // Apply damping limit (±150 kcal)
-    const currentTarget = profile.target_calories || 1950;
-    const diff = recommendedTarget - currentTarget;
-    if (Math.abs(diff) > 150) {
-      recommendedTarget = diff > 0 ? currentTarget + 150 : currentTarget - 150;
+    // Damping limit (±150 kcal) so water/glycogen noise never moves the target
+    // abruptly. With no target yet (fresh profile) the first estimate stands.
+    const currentTarget = profile.target_calories;
+    if (currentTarget > 0) {
+      const diff = recommendedTarget - currentTarget;
+      if (Math.abs(diff) > 150) {
+        recommendedTarget = diff > 0 ? currentTarget + 150 : currentTarget - 150;
+      }
     }
 
     const newEntry: TdeeHistoryEntry = {

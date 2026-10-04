@@ -11,10 +11,12 @@ import {
   Plus,
   Scale,
   TrendingDown,
+  UserRound,
   Utensils,
   Trash2,
 } from 'lucide-react';
 import { DailyLog, Profile } from '@/lib/data';
+import { isProfileReady } from '@/lib/profile';
 import {
   formatDateLong,
   formatDecimal,
@@ -25,12 +27,15 @@ import {
 } from '@/lib/format';
 import QuickFoodModal from '@/components/QuickFoodModal';
 import QuickWorkoutModal from '@/components/QuickWorkoutModal';
+import TodayPlanCard from '@/components/TodayPlanCard';
+import StepsCard from '@/components/StepsCard';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Card, EmptyState, Meter, Pill, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/Field';
 import { DateSwitcher, PageHeader } from '@/components/ui/PageHeader';
 import TrendCharts from '@/components/TrendCharts';
+import { useRecommendation } from '@/lib/useRecommendation';
 
 export default function DashboardPage() {
   const [currentDate, setCurrentDate] = useState(TODAY);
@@ -42,6 +47,13 @@ export default function DashboardPage() {
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [savingWeight, setSavingWeight] = useState(false);
+
+  /* The recommendation engine runs server-side (it reads the JSON store), so the
+     screen consumes one payload instead of recomputing the maths twice. */
+  const {
+    data: recommendation,
+    loading: recommendationLoading,
+  } = useRecommendation(currentDate);
 
   const loadData = useCallback(() => {
     fetch(`/api/daily/${currentDate}`)
@@ -144,10 +156,15 @@ export default function DashboardPage() {
   }
 
   const calConsumed = dailyLog.calories_consumed || 0;
-  const calTarget = dailyLog.calories_target || profile.target_calories || 1950;
+  const calTarget = dailyLog.calories_target || profile.target_calories || 0;
   const calRemaining = calTarget - calConsumed;
   const calPct = calTarget > 0 ? Math.min(100, Math.round((calConsumed / calTarget) * 100)) : 0;
   const overBudget = calConsumed > calTarget;
+  /* Prefer the recommendation engine's adjusted target when it has one. */
+  const recTarget = recommendation?.energy.ready
+    ? recommendation.energy.adjustedTarget
+    : calTarget;
+  const recRemaining = recTarget - calConsumed;
 
   const macros = [
     {
@@ -155,7 +172,7 @@ export default function DashboardPage() {
       label: 'Protein',
       vietnamese: 'Đạm',
       consumed: dailyLog.macros?.protein_g || 0,
-      target: profile.macros_target.protein_g || 165,
+      target: profile.macros_target.protein_g || 0,
       tone: 'teal' as StickerTone,
       chip: 'text-sticker-teal bg-sticker-teal-soft',
       fill: 'bg-sticker-teal',
@@ -165,7 +182,7 @@ export default function DashboardPage() {
       label: 'Carbs',
       vietnamese: 'Tinh bột',
       consumed: dailyLog.macros?.carbs_g || 0,
-      target: profile.macros_target.carbs_g || 195,
+      target: profile.macros_target.carbs_g || 0,
       tone: 'orange' as StickerTone,
       chip: 'text-sticker-orange-deep bg-sticker-orange-soft',
       fill: 'bg-sticker-orange',
@@ -175,7 +192,7 @@ export default function DashboardPage() {
       label: 'Fat',
       vietnamese: 'Chất béo',
       consumed: dailyLog.macros?.fat_g || 0,
-      target: profile.macros_target.fat_g || 55,
+      target: profile.macros_target.fat_g || 0,
       tone: 'brown' as StickerTone,
       chip: 'text-sticker-brown bg-sticker-brown-soft',
       fill: 'bg-sticker-brown',
@@ -205,12 +222,33 @@ export default function DashboardPage() {
         }
       />
 
+      {/* ── Profile intake prompt: the store holds no invented numbers ─── */}
+      {!isProfileReady(profile) ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 r-card border border-dashed border-hairline bg-surface px-4 py-3">
+          <div className="flex items-start gap-2.5">
+            <UserRound className="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-faint" />
+            <p className="text-[13px] text-ink-muted">
+              Hồ sơ đang trống nên chưa có TDEE, calo mục tiêu hay macro thật. Nhắn cho Coach
+              thông tin cơ thể và mục tiêu của bạn, hoặc tự điền ở trang Hồ sơ.
+            </p>
+          </div>
+          <Link href="/profile">
+            <Button variant="utility" size="sm" icon={<ArrowUpRight />}>
+              Điền hồ sơ
+            </Button>
+          </Link>
+        </div>
+      ) : null}
+
       {/* ── The single inverted "night" band for this page ─────────────── */}
+      {/* The band and the suggestion below must quote the same number, so the
+          band's remaining figure comes from the same engine that adjusts for
+          today's movement. */}
       <NightBand
-        remaining={calRemaining}
-        overBudget={overBudget}
+        remaining={recRemaining}
+        overBudget={recRemaining < 0}
         consumed={calConsumed}
-        target={calTarget}
+        target={recTarget}
         progress={calPct}
         dateLabel={formatDateLong(currentDate)}
         relative={relativeDayLabel(currentDate)}
@@ -250,13 +288,19 @@ export default function DashboardPage() {
             icon={TrendingDown}
             label="Mục tiêu"
             value={
-              profile.goal_type === 'cut'
-                ? 'Cắt mỡ'
-                : profile.goal_type === 'bulk'
-                  ? 'Tăng cơ'
-                  : 'Recomp'
+              !isProfileReady(profile)
+                ? 'Chưa thiết lập'
+                : profile.goal_type === 'cut'
+                  ? 'Cắt mỡ'
+                  : profile.goal_type === 'bulk'
+                    ? 'Tăng cơ'
+                    : 'Recomp'
             }
-            meta={`${profile.weekly_target_rate_kg} kg / tuần · ${profile.split_name ?? ''}`}
+            meta={
+              isProfileReady(profile)
+                ? `${profile.weekly_target_rate_kg} kg / tuần · ${profile.split_name ?? ''}`
+                : 'Điền hồ sơ để Coach tính mục tiêu'
+            }
             action={<Pill tone="orange">Cut</Pill>}
           />
           <PropertyRow
@@ -274,6 +318,33 @@ export default function DashboardPage() {
             }
           />
         </dl>
+      </section>
+
+      {/* ── What to do today: session, food budget, movement ───────────── */}
+      <section aria-labelledby="today-recommendation" className="space-y-5">
+        <SectionHead
+          title={<span id="today-recommendation">Đề xuất cho hôm nay</span>}
+          meta="Buổi tập kế tiếp theo vòng xoay giáo án, hạn mức ăn sau khi tính vận động, và mục tiêu bước chân."
+          action={
+            <Link
+              href="/plan"
+              className="inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:text-primary-active"
+            >
+              Kế hoạch tuần <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          }
+        />
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <TodayPlanCard
+            workout={recommendation?.workout ?? null}
+            energy={recommendation?.energy ?? null}
+            loading={recommendationLoading}
+            onLogWorkout={() => setIsWorkoutModalOpen(true)}
+            onLogFood={() => setIsFoodModalOpen(true)}
+          />
+          <StepsCard date={currentDate} steps={recommendation?.steps ?? null} />
+        </div>
       </section>
 
       {/* ── Energy & macro tiles ───────────────────────────────────────── */}

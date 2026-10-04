@@ -13,6 +13,7 @@ const TRAIL: Record<string, string> = {
   '/workout': 'Buổi tập',
   '/tdee': 'Adaptive TDEE',
   '/exercises': 'Bài tập & PR',
+  '/plan': 'Kế hoạch tuần',
   '/profile': 'Hồ sơ',
 };
 

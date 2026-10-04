@@ -94,6 +94,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
               { name: 'Buổi tập', href: '/workout' },
               { name: 'Adaptive TDEE', href: '/tdee' },
               { name: 'Bài tập & PR', href: '/exercises' },
+              { name: 'Kế hoạch tuần', href: '/plan' },
               { name: 'Hồ sơ', href: '/profile' },
             ].map((item) => (
               <li key={item.href}>

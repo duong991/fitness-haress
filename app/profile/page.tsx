@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, RotateCcw, Save, TriangleAlert, UserRound } from 'lucide-react';
 import { Profile } from '@/lib/data';
+import { isProfileReady } from '@/lib/profile';
 import { formatDecimal, formatNumber } from '@/lib/format';
 import Button from '@/components/ui/Button';
 import { Card, SectionHead, SkeletonRows } from '@/components/ui/Card';
@@ -127,6 +128,18 @@ export default function ProfilePage() {
         </div>
       ) : null}
 
+      {/* Intake state: mock numbers were removed, so an empty profile is normal
+          until the user supplies real body parameters and targets. */}
+      {!isProfileReady(draft) ? (
+        <div className="flex items-start gap-2.5 r-card border border-dashed border-hairline bg-canvas px-4 py-3">
+          <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-faint" />
+          <p className="text-[13px] text-ink-muted">
+            Hồ sơ chưa đủ dữ liệu thật (tên, tuổi, chiều cao, cân nặng hiện tại, calo mục tiêu).
+            Điền và lưu để Coach tính TDEE, macro và bám tiến độ của bạn.
+          </p>
+        </div>
+      ) : null}
+
       {/* Snapshot of the values the rest of the app reads */}
       <section aria-labelledby="profile-snapshot" className="space-y-5">
         <SectionHead
@@ -173,12 +186,23 @@ export default function ProfilePage() {
           meta="Dùng cho công thức Mifflin-St Jeor và mục tiêu tốc độ thay đổi cân nặng."
         />
         <Card className="space-y-5 p-5">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <TextField
               label="Tên học viên"
               value={draft.name}
               onChange={(e) => set('name', e.target.value)}
             />
+            <SelectField
+              label="Giới tính"
+              value={draft.gender}
+              onChange={(e) => set('gender', e.target.value)}
+              hint="Dùng cho hằng số công thức Mifflin-St Jeor."
+            >
+              <option value="">Chưa chọn</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
+            </SelectField>
             <TextField
               label="Tuổi"
               type="number"

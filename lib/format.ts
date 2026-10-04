@@ -5,8 +5,16 @@
 
 const WEEKDAYS = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 
-/** The dashboard's canonical anchor: the day the seed data was authored. */
-export const TODAY = '2026-10-04';
+/** Local calendar date as ISO (YYYY-MM-DD) — never UTC, never a seeded date. */
+export function localIsoDate(d: Date = new Date()): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** The dashboard's canonical anchor: today. */
+export const TODAY = localIsoDate();
 
 /** ISO date -> short Vietnamese label, e.g. "Thứ tư 04/10". */
 export function formatDateLong(iso: string): string {

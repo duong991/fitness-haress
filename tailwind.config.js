@@ -117,13 +117,11 @@ module.exports = {
         'elev-2':
           'rgba(0,0,0,0.01) 0 0.175px 1.041px, rgba(0,0,0,0.02) 0 0.8px 2.925px, rgba(0,0,0,0.027) 0 2.025px 7.847px, rgba(0,0,0,0.04) 0 5px 24px, rgba(0,0,0,0.05) 0 23px 52px',
       },
-      borderRadius: {
-        xs: '4px',
-        sm: '5px',
-        md: '8px',
-        lg: '12px',
-        xl: '16px',
-      },
+      /* Deliberately NO `borderRadius` extension.
+         Radii live in six named classes in globals.css (`r-well`, `r-card`,
+         `r-utility`, `r-row`, `r-input`, `r-chip`) so the radius lock cannot be
+         bypassed by reaching for `rounded-md`, whose 6px contradicts the scale
+         this product uses. Verified: no file uses a Tailwind `rounded-*` class. */
     },
   },
   plugins: [],

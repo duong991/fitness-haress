@@ -1,13 +1,19 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Coffee, Moon, Plus, Sandwich, Sun, Trash2, Utensils } from 'lucide-react';
+import { Coffee, Compass, Flame, Footprints, Moon, Plus, Sandwich, Sun, Trash2, Utensils } from 'lucide-react';
 import { DailyLog, Meal, Profile } from '@/lib/data';
 import { formatDecimal, formatNumber, relativeDayLabel, TODAY } from '@/lib/format';
 import QuickFoodModal from '@/components/QuickFoodModal';
 import Button from '@/components/ui/Button';
 import { Card, EmptyState, Meter, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
 import { DateSwitcher, PageHeader } from '@/components/ui/PageHeader';
+import {
+  useRecommendation,
+  type EnergyRecommendationView,
+  type StepsView,
+} from '@/lib/useRecommendation';
+import { cx } from '@/lib/cx';
 
 const MEAL_ICON: Record<string, typeof Coffee> = {
   'Bữa sáng': Coffee,
@@ -31,6 +37,10 @@ export default function FoodPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+
+  /* The suggested budget comes from the server-side engine so this page and the
+     dashboard can never disagree about how much is left to eat. */
+  const { data: recommendation } = useRecommendation(currentDate);
 
   const loadData = useCallback(() => {
     fetch(`/api/daily/${currentDate}`)
@@ -101,7 +111,12 @@ export default function FoodPage() {
 
   const consumed = dailyLog.calories_consumed || 0;
   const target = dailyLog.calories_target || profile.target_calories;
-  const remaining = target - consumed;
+  /* The engine's adjusted budget wins when it has one, so this page and the
+     dashboard quote the same number. */
+  const effectiveTarget = recommendation?.energy.ready
+    ? recommendation.energy.adjustedTarget
+    : target;
+  const effectiveRemaining = effectiveTarget - consumed;
 
   const macroCards = [
     {
@@ -139,9 +154,16 @@ export default function FoodPage() {
         <SectionHead
           title={<span id="day-total">Tổng năng lượng {relativeDayLabel(currentDate).toLowerCase()}</span>}
           meta={
-            remaining >= 0
-              ? `Còn lại ${formatNumber(remaining)} kcal trên mục tiêu ${formatNumber(target)} kcal.`
-              : `Đã vượt ${formatNumber(Math.abs(remaining))} kcal so với mục tiêu ${formatNumber(target)} kcal.`
+            effectiveTarget !== target
+              ? `Hạn mức hôm nay ${formatNumber(effectiveTarget)} kcal (đã cộng ${formatNumber(
+                  effectiveTarget - target,
+                )} kcal vận động) · ` +
+                (effectiveRemaining >= 0
+                  ? `còn được ăn ${formatNumber(effectiveRemaining)} kcal.`
+                  : `đã vượt ${formatNumber(Math.abs(effectiveRemaining))} kcal.`)
+              : effectiveRemaining >= 0
+                ? `Còn lại ${formatNumber(effectiveRemaining)} kcal trên mục tiêu ${formatNumber(target)} kcal.`
+                : `Đã vượt ${formatNumber(Math.abs(effectiveRemaining))} kcal so với mục tiêu ${formatNumber(target)} kcal.`
           }
         />
 
@@ -152,14 +174,16 @@ export default function FoodPage() {
               <span className="font-metric text-heading-2 leading-none text-ink">
                 {formatNumber(consumed)}
               </span>
-              <span className="font-metric text-[13px] text-ink-faint">/ {formatNumber(target)}</span>
+              <span className="font-metric text-[13px] text-ink-faint">
+                / {formatNumber(effectiveTarget)}
+              </span>
             </p>
             <Meter
               className="mt-3"
               value={consumed}
-              max={target}
-              label="Calo nạp so với mục tiêu"
-              fillClassName={remaining < 0 ? 'bg-sticker-orange' : 'bg-primary'}
+              max={effectiveTarget}
+              label="Calo nạp so với hạn mức hôm nay"
+              fillClassName={effectiveRemaining < 0 ? 'bg-sticker-orange' : 'bg-primary'}
             />
             <p className="mt-2.5 text-[12px] text-ink-muted">kcal hôm nay</p>
           </Card>
@@ -191,6 +215,13 @@ export default function FoodPage() {
           ))}
         </div>
       </section>
+
+      {/* The day's budget, adjusted for movement, and what is left to eat */}
+      <RecommendedIntake
+        energy={recommendation?.energy ?? null}
+        steps={recommendation?.steps ?? null}
+        target={target}
+      />
 
       {/* Meals, one card per slot */}
       <section aria-labelledby="meals-detail" className="space-y-5">
@@ -334,5 +365,139 @@ function MealCard({
         </table>
       </div>
     </Card>
+  );
+}
+
+/**
+ * The day's calorie budget, adjusted for movement, plus what is still owed.
+ *
+ * This is the "how much should I actually eat today" answer, sitting directly
+ * above the meal log so the number and the entries are read together.
+ */
+function RecommendedIntake({
+  energy,
+  steps,
+  target,
+}: {
+  energy: EnergyRecommendationView | null;
+  steps: StepsView | null;
+  target: number;
+}) {
+  if (!energy?.ready) {
+    return (
+      <section aria-labelledby="intake-suggest" className="space-y-4">
+        <SectionHead title={<span id="intake-suggest">Hạn mức ăn đề xuất</span>} />
+        <Card className="flex items-start gap-2.5 p-4">
+          <Compass className="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-faint" strokeWidth={1.75} />
+          <p className="max-w-[70ch] text-[13px] leading-relaxed text-ink-muted">
+            {energy?.blockedReason ??
+              'Cần thông số cơ thể và calo mục tiêu trong hồ sơ trước khi hệ thống tính được hạn mức ăn cho hôm nay.'}
+          </p>
+        </Card>
+      </section>
+    );
+  }
+
+  const adjusted = energy.adjustedTarget;
+  const base = energy.baseTarget || target;
+  const over = energy.remainingToEat < 0;
+
+  return (
+    <section aria-labelledby="intake-suggest" className="space-y-4">
+      <SectionHead
+        title={<span id="intake-suggest">Hạn mức ăn đề xuất</span>}
+        meta={
+          energy.activityAdjustment !== 0
+            ? `Đã điều chỉnh ${energy.activityAdjustment > 0 ? '+' : ''}${formatNumber(energy.activityAdjustment)} kcal theo vận động hôm nay.`
+            : 'Chưa có vận động nào vượt mức nền, nên hạn mức giữ nguyên.'
+        }
+      />
+
+      <Card className="p-5">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-3">
+          <div>
+            <p className="text-[12px] font-medium text-ink-faint">Hạn mức hôm nay</p>
+            <p className="mt-1 flex items-baseline gap-1.5">
+              <span className="font-metric text-heading-2 leading-none text-ink">
+                {formatNumber(adjusted)}
+              </span>
+              <span className="text-[13px] text-ink-faint">kcal</span>
+            </p>
+            {energy.activityAdjustment !== 0 ? (
+              <p className="mt-1.5 font-metric text-[12px] text-ink-muted">
+                {formatNumber(base)} kcal gốc{' '}
+                <span className={energy.activityAdjustment > 0 ? 'text-sticker-green-ink' : 'text-sticker-orange-deep'}>
+                  {energy.activityAdjustment > 0 ? '+' : ''}
+                  {formatNumber(energy.activityAdjustment)}
+                </span>
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[12px] text-ink-muted">Bằng mục tiêu gốc</p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[12px] font-medium text-ink-faint">Đã nạp</p>
+            <p className="mt-1 flex items-baseline gap-1.5">
+              <span className="font-metric text-heading-2 leading-none text-ink">
+                {formatNumber(energy.consumed)}
+              </span>
+              <span className="text-[13px] text-ink-faint">kcal</span>
+            </p>
+            <Meter
+              className="mt-3"
+              value={energy.consumed}
+              max={adjusted}
+              label="Đã nạp so với hạn mức hôm nay"
+              fillClassName={over ? 'bg-sticker-orange' : 'bg-primary'}
+            />
+          </div>
+
+          <div>
+            <p className="text-[12px] font-medium text-ink-faint">
+              {over ? 'Vượt hạn mức' : 'Còn được ăn'}
+            </p>
+            <p className="mt-1 flex items-baseline gap-1.5">
+              <span
+                className={cx(
+                  'font-metric text-heading-2 leading-none',
+                  over ? 'text-sticker-orange-deep' : 'text-ink',
+                )}
+              >
+                {formatNumber(Math.abs(energy.remainingToEat))}
+              </span>
+              <span className="text-[13px] text-ink-faint">kcal</span>
+            </p>
+            {!over && energy.remainingToEat > 0 ? (
+              <p className="mt-1.5 font-metric text-[12px] text-ink-muted">
+                cần {formatDecimal(energy.remainingMacros.protein_g)}g đạm ·{' '}
+                {formatDecimal(energy.remainingMacros.carbs_g)}g tinh bột ·{' '}
+                {formatDecimal(energy.remainingMacros.fat_g)}g béo
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[12px] text-ink-muted">
+                Không cần bù bằng cách bỏ bữa, chỉ cần về đúng mức vào ngày mai.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-hairline-soft pt-4 text-[12px] text-ink-muted">
+          <span className="flex items-center gap-1.5">
+            <Footprints className="h-3.5 w-3.5 text-ink-faint" strokeWidth={1.75} />
+            {steps && steps.steps > 0
+              ? `${formatNumber(steps.steps)} bước · đốt ~${formatNumber(steps.kcalBurned)} kcal · cộng lại ${formatNumber(steps.kcalCredit)} kcal`
+              : 'Chưa ghi số bước chân hôm nay'}
+          </span>
+          {energy.mealSuggestion ? (
+            <span className="flex items-center gap-1.5">
+              <Flame className="h-3.5 w-3.5 text-sticker-orange" strokeWidth={1.75} />
+              Bữa tới nên khoảng {formatNumber(energy.mealSuggestion.calories)} kcal (
+              {energy.mealSuggestion.macros.protein_g}g đạm)
+            </span>
+          ) : null}
+        </div>
+      </Card>
+    </section>
   );
 }

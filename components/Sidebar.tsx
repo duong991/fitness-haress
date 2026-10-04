@@ -11,6 +11,7 @@ import {
   ChartNoAxesCombined,
   Trophy,
   UserRound,
+  CalendarRange,
   type LucideIcon,
 } from 'lucide-react';
 import { cx } from '@/lib/cx';
@@ -44,6 +45,7 @@ const NAV: NavItem[] = [
   { name: 'Buổi tập', href: '/workout', icon: Dumbbell },
   { name: 'Adaptive TDEE', href: '/tdee', icon: ChartNoAxesCombined },
   { name: 'Bài tập & PR', href: '/exercises', icon: Trophy },
+  { name: 'Kế hoạch tuần', href: '/plan', icon: CalendarRange },
   { name: 'Hồ sơ', href: '/profile', icon: UserRound },
 ];
 
@@ -70,7 +72,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, summary }: Side
                   Fitness Harness
                 </span>
                 <span className="block truncate text-[11px] leading-tight text-ink-faint">
-                  Học viên Gym
+                  {summary?.name || 'Chưa thiết lập hồ sơ'}
                 </span>
               </span>
             </Link>

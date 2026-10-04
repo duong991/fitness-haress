@@ -26,7 +26,33 @@ export interface Profile {
   macros_target: MacroTarget;
   training_days_per_week: number;
   split_name?: string;
+  /** Derived mirror of `isProfileReady` — false until real data is collected. */
+  onboarded?: boolean;
   updated_at: string;
+  /** Daily movement floor. Steps above the sedentary baseline earn calories back. */
+  steps_target?: number;
+  /**
+   * The training rotation the recommendation engine walks through. Kept in
+   * profile.json so changing the plan is a data edit, never a code edit.
+   */
+  split_config?: SplitConfig;
+}
+
+/** A named training day inside a rotation, e.g. "Upper A (Push Focus)". */
+export interface SplitDay {
+  name: string;
+  /** Muscle groups targeted; matched loosely against Exercise.target_muscle. */
+  muscles: string[];
+}
+
+/**
+ * The rotation the engine advances through, one training day per session.
+ * Days are consumed in order and skipped on rest days, so a 4-day split over a
+ * 7-day week simply wraps.
+ */
+export interface SplitConfig {
+  name: string;
+  days: SplitDay[];
 }
 
 export interface FoodItem {
@@ -76,6 +102,10 @@ export interface DailyLog {
   meals: Meal[];
   workout: WorkoutSession;
   notes?: string;
+  /** Total steps walked that day. 0 means "not recorded yet". */
+  steps?: number;
+  /** The goal this day was measured against, snapshotted so history stays stable. */
+  steps_target?: number;
 }
 
 export interface Exercise {
@@ -213,4 +243,60 @@ export function recalculateDailyTotals(log: DailyLog): DailyLog {
   }
 
   return log;
+}
+
+/* ── Weekly plan ────────────────────────────────────────────────────────────
+   The long-term goal (current weight -> target weight) split into dated weekly
+   milestones, so progress can be judged week by week instead of only against a
+   far-off final number. Persisted so a past week's verdict never changes. */
+
+export interface WeeklyMilestone {
+  /** 1-based order within the plan. */
+  week: number;
+  start_date: string;
+  end_date: string;
+  /** Weight we expect to see at the end of this week. */
+  target_weight_kg: number;
+  /** Change expected inside this week (negative on a cut). */
+  delta_kg: number;
+  target_calories: number;
+  status: 'upcoming' | 'active' | 'done' | 'missed';
+  /** Filled in once the week has enough weigh-ins to judge. */
+  actual_weight_kg?: number;
+  /** actual - target; negative means ahead of schedule on a cut. */
+  variance_kg?: number;
+}
+
+export interface WeeklyPlan {
+  goal_type: Profile['goal_type'];
+  created_at: string;
+  start_date: string;
+  start_weight_kg: number;
+  target_weight_kg: number;
+  weekly_rate_kg: number;
+  /** Empty when the goal is already met or the inputs are incomplete. */
+  milestones: WeeklyMilestone[];
+}
+
+function weeklyPlanPath(): string {
+  return path.join(DATA_DIR, 'weekly_plan.json');
+}
+
+export function getWeeklyPlan(): WeeklyPlan | null {
+  const filePath = weeklyPlanPath();
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as WeeklyPlan;
+  } catch {
+    return null;
+  }
+}
+
+export function saveWeeklyPlan(plan: WeeklyPlan): void {
+  fs.writeFileSync(weeklyPlanPath(), JSON.stringify(plan, null, 2), 'utf-8');
+}
+
+export function clearWeeklyPlan(): void {
+  const filePath = weeklyPlanPath();
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
