@@ -14,8 +14,79 @@ import {
 import { parseNaturalFoodInput } from '@/lib/foodParser';
 import { localIsoDate } from '@/lib/format';
 import { isProfileReady } from '@/lib/profile';
-import { buildEnergyRecommendation, buildWorkoutRecommendation } from '@/lib/core/recommend';
+import { buildEnergyRecommendation, buildWorkoutRecommendation, resolveSplit, type WorkoutRecommendation } from '@/lib/core/recommend';
 import { resolveWeeklyPlan, currentMilestone } from '@/lib/core/weeklyPlan';
+import type { SplitConfig } from '@/lib/data';
+
+/**
+ * Muscle words a user may type when moving a session, mapped onto the muscle
+ * labels the split days are written in.
+ */
+const SESSION_MUSCLE_WORDS: { words: RegExp; muscles: string[] }[] = [
+  { words: /chân|chan|đùi|dui|mông|mong|legs?\b|lower/, muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+  { words: /ngực|nguc|chest|push/, muscles: ['chest', 'triceps'] },
+  { words: /lưng|lung|xô|xo\b|back|pull/, muscles: ['back', 'lats', 'biceps'] },
+  { words: /vai|shoulder|delts?/, muscles: ['shoulders', 'side delts'] },
+  { words: /tay|arm|biceps|triceps/, muscles: ['biceps', 'triceps'] },
+  { words: /bụng|bung|abs|core/, muscles: ['abs'] },
+];
+
+/** Which split day best answers "hôm nay tập chân/ngực/lưng..."? -1 when unclear. */
+function pickSplitDayForKey(split: SplitConfig, text: string): number {
+  const wanted = new Set<string>();
+  for (const entry of SESSION_MUSCLE_WORDS) {
+    if (entry.words.test(text)) entry.muscles.forEach((muscle) => wanted.add(muscle));
+  }
+  if (wanted.size === 0) return -1;
+
+  let bestIndex = -1;
+  let bestScore = 0;
+  split.days.forEach((day, index) => {
+    const dayMuscles = day.muscles.map((m) => m.toLowerCase());
+    let score = 0;
+    wanted.forEach((w) => {
+      if (dayMuscles.some((m) => m.includes(w) || w.includes(m) || m.split(/[\s/]+/).includes(w))) {
+        score += 1;
+      }
+    });
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = index;
+    }
+  });
+  return bestIndex;
+}
+
+/** The exercise-by-exercise part of a session reply, shared by every branch. */
+function formatSessionLines(session: WorkoutRecommendation): string {
+  return session.items
+    .map(
+      (item, i) =>
+        `${i + 1}. ${item.name} — ${item.sets} set × ${item.reps} reps, đỉnh ${item.top_set_weight_kg} kg` +
+        `${item.set_weights.length > 1 ? ` (ladder: ${item.set_weights.join(' / ')} kg)` : ''}\n   ↳ ${item.progression}`,
+    )
+    .join('\n');
+}
+
+/** One rendering of a session, so no branch can drift from the others. */
+function sessionReply(session: WorkoutRecommendation, date: string, headline: string): string {
+  if (session.is_rest_day) {
+    return (
+      `Hôm nay là **ngày nghỉ phục hồi** theo giáo án ${session.split_name}.\n\n` +
+      `${session.rationale}\n\n` +
+      `• Vận động nhẹ: mục tiêu ${session.cardio.stepsTarget.toLocaleString('en-US')} bước (~${session.cardio.kcal} kcal).\n` +
+      `• Ưu tiên ngủ đủ và ăn đủ protein để buổi sau khỏe hơn.`
+    );
+  }
+  return (
+    `${headline} (${date}): **${session.day_name}**\n\n` +
+    `${session.rationale}\n\n` +
+    `${formatSessionLines(session)}\n\n` +
+    `• Thời lượng ước tính: ~${session.estimated_minutes} phút · volume dự kiến ~${session.estimated_volume_kg.toLocaleString('en-US')} kg.\n` +
+    `• Cardio: ${session.cardio.stepsTarget.toLocaleString('en-US')} bước (~${session.cardio.kcal} kcal).\n` +
+    `• Tạ đề xuất tính từ 1RM (PR đã ghi, hoặc ước tính theo cân nặng cơ thể khi chưa có PR). Ghi lại set thực tế để Coach chỉnh cho buổi sau.`
+  );
+}
 
 export async function POST(request: Request) {
   try {
@@ -217,42 +288,82 @@ export async function POST(request: Request) {
     const pTarget = profile.macros_target.protein_g || 0;
     const pDiff = Math.round((pTarget - pConsumed) * 10) / 10;
 
+    // Move today's session on request: "đổi buổi hôm nay sang tập chân".
+    const wantsSessionReset =
+      /(bỏ|bo|xoá|xoa|huỷ|huy|quay lại|quay lai|reset)/.test(lower) &&
+      /(đổi|doi|buổi|buoi|override|giáo án|giao an)/.test(lower);
+    const wantsSessionChange =
+      /(đổi|doi|chuyển|chuyen|thay|switch|change)/.test(lower) &&
+      /(buổi|buoi|bài|bai|tập|tap|lịch|lich|đề xuất|de xuat|sang)/.test(lower);
+
+    if (wantsSessionChange || wantsSessionReset) {
+      const split = resolveSplit(profile);
+      const exercises = getExercises();
+
+      if (wantsSessionReset) {
+        delete dailyLog.session_override;
+        saveDailyLog(date, dailyLog);
+        const session = buildWorkoutRecommendation({
+          profile,
+          logs: getAllDailyLogs(),
+          exercises,
+          date,
+        });
+        return NextResponse.json({
+          actionTaken: 'session_reset',
+          reply: `Đã bỏ đổi buổi cho ngày ${date}, đề xuất quay lại vòng xoay tự động.\n\n${sessionReply(
+            session,
+            date,
+            'Đề xuất buổi tập hôm nay',
+          )}`,
+          updatedLog: dailyLog,
+        });
+      }
+
+      const index = pickSplitDayForKey(split, lower);
+      if (index < 0) {
+        return NextResponse.json({
+          reply:
+            `Bạn muốn đổi buổi hôm nay sang nhóm cơ nào? Giáo án ${split.name} đang có:\n\n` +
+            split.days.map((d, i) => `${i + 1}. ${d.name}`).join('\n') +
+            `\n\nNhắn ví dụ: "đổi buổi hôm nay sang tập chân".`,
+        });
+      }
+
+      const day = split.days[index];
+      dailyLog.session_override = day.name;
+      saveDailyLog(date, dailyLog);
+
+      const session = buildWorkoutRecommendation({
+        profile,
+        logs: getAllDailyLogs(),
+        exercises,
+        date,
+      });
+
+      return NextResponse.json({
+        actionTaken: 'session_changed',
+        reply:
+          `Đã chuyển đề xuất ngày ${date} sang **${day.name}**.\n\n` +
+          `${sessionReply(session, date, 'Buổi tập mới cho hôm nay')}\n\n` +
+          `• Chỉ ngày ${date} bị đổi. Vòng xoay các ngày sau vẫn tính theo buổi bạn ghi thực tế, và có thể bỏ đổi bằng câu "bỏ đổi buổi".`,
+        updatedLog: dailyLog,
+      });
+    }
+
     // Today's session: what to train and at what load.
     if (
       /tập gì|tap gi|buổi tập hôm nay|buoi tap hom nay|đề xuất.*(tập|buổi)|hôm nay tập|nên tập/.test(lower)
     ) {
-      const logs = getAllDailyLogs();
       const session = buildWorkoutRecommendation({
         profile,
-        logs,
+        logs: getAllDailyLogs(),
         exercises: getExercises(),
         date,
       });
 
-      if (session.is_rest_day) {
-        return NextResponse.json({
-          reply: `Hôm nay là **ngày nghỉ phục hồi** theo giáo án ${session.split_name}.\n\n` +
-                 `${session.rationale}\n\n` +
-                 `• Vận động nhẹ: mục tiêu ${session.cardio.stepsTarget.toLocaleString('en-US')} bước (~${session.cardio.kcal} kcal).\n` +
-                 `• Ưu tiên ngủ đủ và ăn đủ protein để buổi sau khỏe hơn.`,
-        });
-      }
-
-      const lines = session.items
-        .map(
-          (item, i) =>
-            `${i + 1}. ${item.name} — ${item.sets} set × ${item.reps} reps, đỉnh ${item.top_set_weight_kg} kg` +
-            `${item.set_weights.length > 1 ? ` (ladder: ${item.set_weights.join(' / ')} kg)` : ''}\n   ↳ ${item.progression}`,
-        )
-        .join('\n');
-
       return NextResponse.json({
-        reply: `Đề xuất buổi tập hôm nay (${date}): **${session.day_name}**\n\n` +
-               `${session.rationale}\n\n` +
-               `${lines}\n\n` +
-               `• Thời lượng ước tính: ~${session.estimated_minutes} phút · volume dự kiến ~${session.estimated_volume_kg.toLocaleString('en-US')} kg.\n` +
-               `• Cardio: ${session.cardio.stepsTarget.toLocaleString('en-US')} bước (~${session.cardio.kcal} kcal).\n` +
-               `• Tạ đề xuất tính từ 1RM (PR đã ghi, hoặc ước tính theo cân nặng cơ thể khi chưa có PR). Ghi lại set thực tế để Coach chỉnh cho buổi sau.`,
+        reply: sessionReply(session, date, 'Đề xuất buổi tập hôm nay'),
       });
     }
 

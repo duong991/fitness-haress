@@ -3,132 +3,72 @@
     "id": "bench_press",
     "name": "Barbell Bench Press",
     "target_muscle": "Chest",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 85,
-      "reps": 5,
-      "date": "2026-09-29"
-    }
+    "category": "Compound"
   },
   {
     "id": "incline_dumbbell_press",
     "name": "Incline Dumbbell Press",
     "target_muscle": "Upper Chest",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 26,
-      "reps": 8,
-      "date": "2026-09-29"
-    }
+    "category": "Compound"
   },
   {
     "id": "barbell_squat",
     "name": "Barbell Back Squat",
     "target_muscle": "Quads",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 110,
-      "reps": 5,
-      "date": "2026-09-30"
-    }
+    "category": "Compound"
   },
   {
     "id": "romanian_deadlift",
     "name": "Romanian Deadlift (RDL)",
     "target_muscle": "Hamstrings / Glutes",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 100,
-      "reps": 8,
-      "date": "2026-09-30"
-    }
+    "category": "Compound"
   },
   {
     "id": "lat_pulldown",
     "name": "Lat Pulldown",
     "target_muscle": "Lats",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 65,
-      "reps": 10,
-      "date": "2026-10-02"
-    }
+    "category": "Compound"
   },
   {
     "id": "barbell_row",
     "name": "Barbell Bent-Over Row",
     "target_muscle": "Back",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 70,
-      "reps": 8,
-      "date": "2026-10-02"
-    }
+    "category": "Compound"
   },
   {
     "id": "overhead_press",
     "name": "Standing Overhead Press (OHP)",
     "target_muscle": "Shoulders",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 47.5,
-      "reps": 6,
-      "date": "2026-09-29"
-    }
+    "category": "Compound"
   },
   {
     "id": "dumbbell_lateral_raise",
     "name": "Dumbbell Lateral Raise",
     "target_muscle": "Side Delts",
-    "category": "Isolation",
-    "personal_record": {
-      "weight_kg": 12,
-      "reps": 12,
-      "date": "2026-10-02"
-    }
+    "category": "Isolation"
   },
   {
     "id": "barbell_bicep_curl",
     "name": "Barbell Bicep Curl",
     "target_muscle": "Biceps",
-    "category": "Isolation",
-    "personal_record": {
-      "weight_kg": 30,
-      "reps": 10,
-      "date": "2026-10-02"
-    }
+    "category": "Isolation"
   },
   {
     "id": "cable_tricep_pushdown",
     "name": "Cable Tricep Pushdown",
     "target_muscle": "Triceps",
-    "category": "Isolation",
-    "personal_record": {
-      "weight_kg": 35,
-      "reps": 12,
-      "date": "2026-09-29"
-    }
+    "category": "Isolation"
   },
   {
     "id": "leg_press",
     "name": "Leg Press 45°",
     "target_muscle": "Quads",
-    "category": "Compound",
-    "personal_record": {
-      "weight_kg": 180,
-      "reps": 10,
-      "date": "2026-10-03"
-    }
+    "category": "Compound"
   },
   {
     "id": "standing_calf_raise",
     "name": "Standing Calf Raise",
     "target_muscle": "Calves",
-    "category": "Isolation",
-    "personal_record": {
-      "weight_kg": 60,
-      "reps": 15,
-      "date": "2026-10-03"
-    }
+    "category": "Isolation"
   }
 ]

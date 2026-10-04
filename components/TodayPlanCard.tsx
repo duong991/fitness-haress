@@ -108,6 +108,8 @@ export default function TodayPlanCard({
                 ) : (
                   <Pill tone="purple">Ngày nghỉ</Pill>
                 )}
+                {/* An override is the user's own call, so it is labelled as one. */}
+                {workout.overridden ? <Pill tone="orange">Đã đổi buổi</Pill> : null}
                 <span>{workout.split_name}</span>
               </p>
             </div>

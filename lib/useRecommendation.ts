@@ -64,7 +64,8 @@ export interface WorkoutRecommendationView {
   items: WorkoutItemView[];
   estimated_volume_kg: number;
   estimated_minutes: number;
-  rotation_source: 'history' | 'start';
+  rotation_source: 'history' | 'start' | 'override';
+  overridden: boolean;
   last_session?: { date: string; name: string };
   cardio: { stepsTarget: number; kcal: number };
 }

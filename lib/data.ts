@@ -106,6 +106,12 @@ export interface DailyLog {
   steps?: number;
   /** The goal this day was measured against, snapshotted so history stays stable. */
   steps_target?: number;
+  /**
+   * Day-level pin: which split day to train, by name, replacing whatever the
+   * automatic rotation would have chosen. Set when the user deliberately moves
+   * a session ("hôm nay tập chân"), never by the engine itself.
+   */
+  session_override?: string;
 }
 
 export interface Exercise {

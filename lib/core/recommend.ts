@@ -101,7 +101,9 @@ export interface WorkoutRecommendation {
   estimated_volume_kg: number;
   estimated_minutes: number;
   /** Where we think this rotation continues from. */
-  rotation_source: 'history' | 'start';
+  rotation_source: 'history' | 'start' | 'override';
+  /** True when the user pinned today's session instead of following the rotation. */
+  overridden: boolean;
   last_session?: { date: string; name: string };
   cardio: { stepsTarget: number; kcal: number };
 }
@@ -293,7 +295,8 @@ export function buildEnergyRecommendation({
     );
   } else if (steps > 0) {
     notes.push(
-      `Đi bộ ${steps.toLocaleString('en-US')} bước, phần vượt mức nền tương đương ~${stepsKcal} kcal.`,
+      `Đi bộ ${steps.toLocaleString('en-US')} bước: phần vượt mức nền đốt thêm ~${stepsKcal} kcal, ` +
+        `và được cộng lại ${Math.round(ACTIVITY_EAT_BACK * 100)}% (~${Math.round(stepsKcal * ACTIVITY_EAT_BACK)} kcal) vào hạn mức ăn.`,
     );
   } else {
     notes.push('Chưa ghi số bước chân hôm nay, nên chưa tính phần calo vận động.');
@@ -415,6 +418,52 @@ function roundLoad(kg: number): number {
   return Math.round(kg / step) * step;
 }
 
+/** Round to the nearest pair of dumbbells, which move in 2 kg jumps. */
+function roundDumbbell(kg: number): number {
+  if (kg <= 0) return 0;
+  return Math.max(2, Math.round(kg / 2) * 2);
+}
+
+type Equipment = 'barbell' | 'dumbbell' | 'machine' | 'bodyweight';
+
+function equipmentOf(exercise: Exercise): Equipment {
+  const name = exercise.name.toLowerCase();
+  if (/dumbbell|db\b/.test(name)) return 'dumbbell';
+  if (/cable|machine|smith|pushdown|pulldown|leg press|pec deck|extension|curl machine/.test(name)) {
+    return 'machine';
+  }
+  if (/barbell|bench press|squat|deadlift|overhead press|\brow\b/.test(name)) return 'barbell';
+  if (/pull-?up|chin-?up|push-?up|dip|plank|bodyweight/.test(name)) return 'bodyweight';
+  return 'machine';
+}
+
+/**
+ * Starting load when a lift has no PR and no logged history.
+ *
+ * Expressed as a multiple of bodyweight and then reduced to a working weight by
+ * the session's intensity, because "guess a 1RM" produces obvious nonsense
+ * otherwise (a 74 kg beginner cannot press 70 kg overhead, and a dumbbell press
+ * is not loaded like a barbell). These ratios are deliberately conservative:
+ * the first session should feel light, and the engine only needs to be right
+ * enough to be safe. Every figure derived this way is labelled "ước tính".
+ */
+const STRENGTH_RATIO: Record<Equipment, number> = {
+  barbell: 0.95,
+  dumbbell: 0.34,
+  machine: 0.6,
+  bodyweight: 0.7,
+};
+
+/** Isolation work moves far less load than the compound it assists. */
+function fallbackRatio(exercise: Exercise): number {
+  const equipment = equipmentOf(exercise);
+  const name = exercise.name.toLowerCase();
+  const base = STRENGTH_RATIO[equipment];
+  if (exercise.category === 'Isolation') return base * 0.55;
+  if (/overhead press|\bohp\b|shoulder press|lateral raise/.test(name)) return base * 0.62;
+  return base;
+}
+
 /** Descending working-set ladder, lightest first, top set last. */
 function setLadder(topWeight: number, sets: number): number[] {
   const step = topWeight < 60 ? 2.5 : 5;
@@ -479,6 +528,30 @@ function resolveRotationDay(
 
   if (matched < 0) return { index: 0, source: 'history', last };
   return { index: (matched + 1) % split.days.length, source: 'history', last };
+}
+
+/**
+ * Loose name match between a stored override and the split's days.
+ *
+ * The override is written by the coach from free text ("tập chân"), so it is
+ * matched by exact name first, then by the leading token ("Lower" in
+ * "Lower A (Squat Focus)"), then as a substring in either direction.
+ */
+export function matchSplitDay(split: SplitConfig, wanted: string): number {
+  const needle = wanted.trim().toLowerCase();
+  if (!needle) return -1;
+
+  const exact = split.days.findIndex((d) => d.name.toLowerCase() === needle);
+  if (exact >= 0) return exact;
+
+  const first = needle.split(/[\s(]+/)[0];
+  const byFirst = split.days.findIndex((d) => first.length > 2 && d.name.toLowerCase().includes(first));
+  if (byFirst >= 0) return byFirst;
+
+  return split.days.findIndex((d) => {
+    const name = d.name.toLowerCase();
+    return name.includes(needle) || needle.includes(name);
+  });
 }
 
 /**
@@ -573,11 +646,19 @@ export function buildWorkoutRecommendation({
       estimated_volume_kg: 0,
       estimated_minutes: 0,
       rotation_source: 'start',
+      overridden: false,
       cardio: { stepsTarget, kcal: 0 },
     };
   }
 
-  const rest = isRestDay(profile.training_days_per_week, date);
+  // A day-level pin beats the weekly schedule and the rotation: if the user says
+  // "hôm nay tập chân", that is the session, even on a scheduled rest day.
+  const todayLog = logs.find((l) => l.date === date);
+  const overrideName = todayLog?.session_override?.trim() ?? '';
+  const overrideIndex = overrideName ? matchSplitDay(split, overrideName) : -1;
+  const overridden = overrideIndex >= 0;
+
+  const rest = isRestDay(profile.training_days_per_week, date) && !overridden;
 
   if (rest) {
     return {
@@ -593,28 +674,45 @@ export function buildWorkoutRecommendation({
       estimated_volume_kg: 0,
       estimated_minutes: 0,
       rotation_source: 'start',
+      overridden: false,
       cardio: { stepsTarget, kcal: Math.round(stepsTarget * KCAL_PER_STEP) },
     };
   }
 
-  const rotation = resolveRotationDay(profile, split, logs, date);
+  const rotationBase = resolveRotationDay(profile, split, logs, date);
+  const rotation = overridden
+    ? { ...rotationBase, index: overrideIndex, source: 'override' as const }
+    : rotationBase;
   const day = split.days[rotation.index] ?? split.days[0];
 
-  // Bodyweight fallback only when a lift has no recorded PR yet.
+  // Loads come from the recorded PR where one exists; otherwise they are derived
+  // from bodyweight and the equipment, and never presented as anything but an
+  // estimate.
   const bw = profile.current_weight_kg;
 
   let loggedToday = false;
   const items: WorkoutSuggestionItem[] = chooseExercises(exercises, day).map((exercise, i) => {
     const scheme = schemeForIndex(rotation.index + i);
-    const estimated1RM =
-      exercise.category === 'Compound'
-        ? roundLoad(bw * (exercise.target_muscle.toLowerCase().includes('quad') ? 1.5 : 1.05))
-        : roundLoad(bw * 0.32);
-
     const hasPr = Boolean(exercise.personal_record?.weight_kg);
-    const oneRm = hasPr ? exercise.personal_record!.weight_kg * (1 + exercise.personal_record!.reps / 30) : estimated1RM;
 
-    const topWeight = Math.max(2.5, roundLoad(oneRm * scheme.pct));
+    // Without a PR, apply the intensity to the working ratio directly: treating a
+    // bodyweight guess as a true 1RM makes the first session far too heavy.
+    let topWeight: number;
+    if (hasPr) {
+      const oneRm = exercise.personal_record!.weight_kg * (1 + exercise.personal_record!.reps / 30);
+      topWeight = Math.max(2.5, roundLoad(oneRm * scheme.pct));
+    } else {
+      const working = bw * fallbackRatio(exercise);
+      topWeight =
+        equipmentOf(exercise) === 'dumbbell'
+          ? Math.max(2, roundDumbbell(working))
+          : Math.max(2.5, roundLoad(working));
+    }
+
+    const oneRm = hasPr
+      ? exercise.personal_record!.weight_kg * (1 + exercise.personal_record!.reps / 30)
+      : topWeight / scheme.pct;
+
     const setWeights = setLadder(topWeight, scheme.sets);
 
     // Heaviest set of the most recent session that trained this lift: the number
@@ -647,7 +745,7 @@ export function buildWorkoutRecommendation({
       const pr = exercise.personal_record!;
       progression = `Kỷ lục đã ghi ${pr.weight_kg} kg × ${pr.reps} (${pr.date}). Hôm nay làm việc ở ${topWeight} kg × ${scheme.reps} reps, khoảng ${Math.round(scheme.pct * 100)}% 1RM.`;
     } else {
-      progression = `Chưa có PR cũng chưa có lịch sử, nên đây là mức khởi đầu ước tính theo cân nặng cơ thể. Bắt đầu ${topWeight} kg × ${scheme.reps} reps ở RPE 7, tăng tạ khi chạm ${scheme.reps + 2} reps.`;
+      progression = `Chưa có PR và chưa có lịch sử, nên đây là mức khởi đầu ước tính theo cân nặng cơ thể, không phải kết quả đo. Làm việc quanh ${topWeight} kg trong khoảng ${scheme.reps - 2}-${scheme.reps + 2} reps ở RPE 7: nếu chạm ${scheme.reps + 2} reps thì tăng tạ, nếu không đủ ${scheme.reps - 2} reps thì giảm.`;
     }
 
     if (hasLoggedToday(logs, date, exercise.id)) loggedToday = true;
@@ -677,9 +775,18 @@ export function buildWorkoutRecommendation({
   const estimatedMinutes = minutesFor(totalSets, items.length);
 
   const dayLabel = day.name;
-  const rationale = rotation.last
+  const rotationRationale = rotation.last
     ? `Buổi gần nhất ${formatDateShort(rotation.last.date)} là "${rotation.last.workout.session_name || 'buổi tập'}", nên hôm nay tới lượt ${dayLabel} trong giáo án ${split.name}.`
     : `Chưa có buổi tập nào được ghi, nên bắt đầu vòng xoay ở ${dayLabel} của giáo án ${split.name}.`;
+
+  // An override is always stated as such, so the card never implies the rotation
+  // picked this session on its own.
+  const rationale = overridden
+    ? `Bạn đã đổi buổi hôm nay sang ${dayLabel} thay cho vòng xoay tự động của giáo án ${split.name}.` +
+      (rotation.last
+        ? ` Buổi gần nhất đã ghi: "${rotation.last.workout.session_name || 'buổi tập'}" ngày ${formatDateShort(rotation.last.date)}.`
+        : '')
+    : rotationRationale;
 
   return {
     ready: true,
@@ -696,6 +803,7 @@ export function buildWorkoutRecommendation({
     estimated_volume_kg: Math.round(estimatedVolume),
     estimated_minutes: estimatedMinutes,
     rotation_source: rotation.source,
+    overridden,
     last_session: rotation.last
       ? { date: rotation.last.date, name: rotation.last.workout.session_name || 'Buổi tập' }
       : undefined,
