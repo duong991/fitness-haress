@@ -1,219 +1,330 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, Save, CheckCircle2, Shield } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { CheckCircle2, RotateCcw, Save, TriangleAlert, UserRound } from 'lucide-react';
 import { Profile } from '@/lib/data';
+import { formatDecimal, formatNumber } from '@/lib/format';
+import Button from '@/components/ui/Button';
+import { Card, SectionHead, SkeletonRows } from '@/components/ui/Card';
+import { SelectField, TextField } from '@/components/ui/Field';
+import { PageHeader, StatBlock } from '@/components/ui/PageHeader';
+
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState<Profile | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     fetch('/api/profile')
-      .then(res => res.json())
-      .then(data => setProfile(data));
+      .then((res) => res.json())
+      .then((data: Profile) => {
+        setProfile(data);
+        setDraft(data);
+      })
+      .catch(() => setProfile(null));
   }, []);
 
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  useEffect(() => {
+    if (saveState !== 'saved') return;
+    const t = setTimeout(() => setSaveState('idle'), 3200);
+    return () => clearTimeout(t);
+  }, [saveState]);
+
   async function handleSave() {
-    if (!profile) return;
-    setLoading(true);
-    setSaved(false);
+    if (!draft) return;
+    setSaveState('saving');
     try {
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({ ...draft, updated_at: new Date().toISOString().slice(0, 10) }),
       });
       const data = await res.json();
       if (data.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setSaveState('saved');
+        setProfile(draft);
+        window.dispatchEvent(new CustomEvent('fitness-data-updated'));
+      } else {
+        setSaveState('error');
       }
-    } catch (e) {
-      alert('Lỗi lưu cấu hình hồ sơ');
-    } finally {
-      setLoading(false);
+    } catch {
+      setSaveState('error');
     }
   }
 
-  if (!profile) return null;
+  const isDirty = Boolean(
+    draft && profile && JSON.stringify(draft) !== JSON.stringify(profile),
+  );
+
+  const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
+    setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+
+  const setMacro = (key: keyof Profile['macros_target'], value: number) =>
+    setDraft((prev) =>
+      prev ? { ...prev, macros_target: { ...prev.macros_target, [key]: value } } : prev,
+    );
+
+  if (!draft || !profile) {
+    return (
+      <div className="space-y-8">
+        <PageHeader title="Hồ sơ & mục tiêu" icon={UserRound} />
+        <SkeletonRows rows={3} cols={3} />
+        <SkeletonRows rows={3} cols={3} />
+      </div>
+    );
+  }
+
+  const weightDelta = Math.round((profile.current_weight_kg - profile.starting_weight_kg) * 10) / 10;
+  const toGoal = Math.round((profile.current_weight_kg - profile.target_weight_kg) * 10) / 10;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-16">
-      {/* Header */}
-      <div className="flex items-center justify-between bg-surface p-5 rounded-2xl border border-surface-border">
-        <div className="flex items-center gap-3">
-          <User className="w-7 h-7 text-neon-lime" />
-          <div>
-            <h1 className="text-xl font-bold text-white">Hồ Sơ & Mục Tiêu Thể Hình</h1>
-            <p className="text-xs text-zinc-400">Tùy chỉnh thông số sinh học, mục tiêu cân nặng và phân bổ macro</p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="px-5 py-2.5 rounded-xl bg-neon-lime text-black font-extrabold text-xs uppercase tracking-wider hover:bg-neon-lime/90 disabled:opacity-50 transition-all flex items-center gap-2 shadow-lg shadow-neon-lime/20"
-        >
-          <Save className="w-4 h-4" />
-          {loading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
-        </button>
-      </div>
-
-      {saved && (
-        <div className="p-4 rounded-xl bg-neon-lime/10 border border-neon-lime/30 text-neon-lime text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Đã lưu thành công vào file data/profile.json!</span>
-        </div>
-      )}
-
-      {/* Form Details */}
-      <div className="cyber-card p-6 space-y-6">
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-zinc-800 pb-2">
-          1. Thông số cơ thể
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Tên học viên</label>
-            <input
-              type="text"
-              value={profile.name}
-              onChange={e => setProfile({ ...profile, name: e.target.value })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Tuổi</label>
-            <input
-              type="number"
-              value={profile.age}
-              onChange={e => setProfile({ ...profile, age: parseInt(e.target.value, 10) || 0 })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Chiều cao (cm)</label>
-            <input
-              type="number"
-              value={profile.height_cm}
-              onChange={e => setProfile({ ...profile, height_cm: parseInt(e.target.value, 10) || 0 })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Cân nặng bắt đầu (kg)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={profile.starting_weight_kg}
-              onChange={e => setProfile({ ...profile, starting_weight_kg: parseFloat(e.target.value) || 0 })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Cân nặng hiện tại (kg)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={profile.current_weight_kg}
-              onChange={e => setProfile({ ...profile, current_weight_kg: parseFloat(e.target.value) || 0 })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Cân nặng mục tiêu (kg)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={profile.target_weight_kg}
-              onChange={e => setProfile({ ...profile, target_weight_kg: parseFloat(e.target.value) || 0 })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-        </div>
-
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-zinc-800 pb-2 pt-4">
-          2. Mục tiêu Calo & Phân bổ Dinh Dưỡng
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Loại Mục Tiêu</label>
-            <select
-              value={profile.goal_type}
-              onChange={e => setProfile({ ...profile, goal_type: e.target.value as any })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-neon-lime"
+    <div className="space-y-10 pb-8">
+      <PageHeader
+        title="Hồ sơ & mục tiêu"
+        description="Thông số sinh học, mục tiêu calo và tỷ lệ macro. Mọi thay đổi ghi thẳng vào data/profile.json."
+        icon={UserRound}
+        actions={
+          <>
+            {isDirty ? (
+              <Button variant="ghost" icon={<RotateCcw />} onClick={() => setDraft(profile)}>
+                Hoàn tác
+              </Button>
+            ) : null}
+            <Button
+              variant="primary"
+              icon={<Save />}
+              onClick={handleSave}
+              disabled={saveState === 'saving' || !isDirty}
             >
-              <option value="cut">Cắt mỡ (Cut - thâm hụt calo)</option>
-              <option value="bulk">Tăng cơ (Bulk - dư thừa calo)</option>
-              <option value="recomp">Tái tạo cơ thể (Recomp)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Calo mục tiêu (kcal/ngày)</label>
-            <input
-              type="number"
-              value={profile.target_calories}
-              onChange={e => setProfile({ ...profile, target_calories: parseInt(e.target.value, 10) || 0 })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Tốc độ mục tiêu (kg/tuần)</label>
-            <input
-              type="number"
-              step="0.05"
-              value={profile.weekly_target_rate_kg}
-              onChange={e => setProfile({ ...profile, weekly_target_rate_kg: parseFloat(e.target.value) || 0 })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-          </div>
-        </div>
+              {saveState === 'saving' ? 'Đang lưu...' : isDirty ? 'Lưu thay đổi' : 'Đã đồng bộ'}
+            </Button>
+          </>
+        }
+      />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Protein mục tiêu (g)</label>
-            <input
-              type="number"
-              value={profile.macros_target.protein_g}
-              onChange={e => setProfile({
-                ...profile,
-                macros_target: { ...profile.macros_target, protein_g: parseInt(e.target.value, 10) || 0 }
-              })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-cyan"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Carbs mục tiêu (g)</label>
-            <input
-              type="number"
-              value={profile.macros_target.carbs_g}
-              onChange={e => setProfile({
-                ...profile,
-                macros_target: { ...profile.macros_target, carbs_g: parseInt(e.target.value, 10) || 0 }
-              })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-neon-orange"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Fat mục tiêu (g)</label>
-            <input
-              type="number"
-              value={profile.macros_target.fat_g}
-              onChange={e => setProfile({
-                ...profile,
-                macros_target: { ...profile.macros_target, fat_g: parseInt(e.target.value, 10) || 0 }
-              })}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-zinc-400"
-            />
-          </div>
+      {/* Save feedback, inline under the header rather than a floating toast */}
+      {saveState === 'saved' ? (
+        <div className="flex items-start gap-2.5 r-card border border-sticker-green-line bg-sticker-green-soft px-4 py-3">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-ok" />
+          <p className="text-[13px] text-ink">
+            Đã ghi hồ sơ vào <span className="font-metric">data/profile.json</span>.
+          </p>
         </div>
-      </div>
+      ) : null}
+
+      {saveState === 'error' ? (
+        <div className="flex items-start gap-2.5 r-card border border-bad-line bg-bad-surface px-4 py-3">
+          <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-bad" />
+          <p className="text-[13px] text-ink">
+            Không lưu được hồ sơ. Kiểm tra kết nối rồi thử lại.
+          </p>
+        </div>
+      ) : null}
+
+      {/* Snapshot of the values the rest of the app reads */}
+      <section aria-labelledby="profile-snapshot" className="space-y-5">
+        <SectionHead
+          title={<span id="profile-snapshot">Tóm tắt đang áp dụng</span>}
+          meta={`Cập nhật lần cuối ${profile.updated_at}`}
+        />
+
+        <Card className="p-5">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
+            <StatBlock
+              label="Cân nặng hiện tại"
+              value={profile.current_weight_kg}
+              unit="kg"
+              meta={`Xuất phát ${profile.starting_weight_kg} kg · ${
+                weightDelta <= 0 ? 'giảm' : 'tăng'
+              } ${Math.abs(weightDelta)} kg`}
+            />
+            <StatBlock
+              label="Còn cách mục tiêu"
+              value={Math.abs(toGoal)}
+              unit="kg"
+              meta={`Mục tiêu ${profile.target_weight_kg} kg`}
+            />
+            <StatBlock
+              label="Calo mục tiêu"
+              value={formatNumber(profile.target_calories)}
+              unit="kcal/ngày"
+              meta={`TDEE ${formatNumber(profile.current_tdee)} kcal`}
+            />
+            <StatBlock
+              label="Buổi tập mỗi tuần"
+              value={profile.training_days_per_week}
+              unit="buổi"
+              meta={profile.split_name ?? '—'}
+            />
+          </dl>
+        </Card>
+      </section>
+
+      {/* Body parameters */}
+      <section aria-labelledby="body-params" className="space-y-5">
+        <SectionHead
+          title={<span id="body-params">Thông số cơ thể</span>}
+          meta="Dùng cho công thức Mifflin-St Jeor và mục tiêu tốc độ thay đổi cân nặng."
+        />
+        <Card className="space-y-5 p-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <TextField
+              label="Tên học viên"
+              value={draft.name}
+              onChange={(e) => set('name', e.target.value)}
+            />
+            <TextField
+              label="Tuổi"
+              type="number"
+              inputMode="numeric"
+              value={draft.age}
+              onChange={(e) => set('age', Number.parseInt(e.target.value, 10) || 0)}
+            />
+            <TextField
+              label="Chiều cao (cm)"
+              type="number"
+              inputMode="numeric"
+              value={draft.height_cm}
+              onChange={(e) => set('height_cm', Number.parseInt(e.target.value, 10) || 0)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <TextField
+              label="Cân nặng bắt đầu (kg)"
+              type="number"
+              step="0.1"
+              inputMode="decimal"
+              value={draft.starting_weight_kg}
+              onChange={(e) => set('starting_weight_kg', Number.parseFloat(e.target.value) || 0)}
+            />
+            <TextField
+              label="Cân nặng hiện tại (kg)"
+              type="number"
+              step="0.1"
+              inputMode="decimal"
+              value={draft.current_weight_kg}
+              onChange={(e) => set('current_weight_kg', Number.parseFloat(e.target.value) || 0)}
+              hint="Ghi cân mới ở trang Hôm nay để TDEE bám sát thực tế."
+            />
+            <TextField
+              label="Cân nặng mục tiêu (kg)"
+              type="number"
+              step="0.1"
+              inputMode="decimal"
+              value={draft.target_weight_kg}
+              onChange={(e) => set('target_weight_kg', Number.parseFloat(e.target.value) || 0)}
+            />
+          </div>
+        </Card>
+      </section>
+
+      {/* Energy targets */}
+      <section aria-labelledby="energy-targets" className="space-y-5">
+        <SectionHead
+          title={<span id="energy-targets">Mục tiêu calo &amp; tốc độ</span>}
+          meta="Calo mục tiêu chỉ nên dịch tối đa 100-150 kcal mỗi tuần để tránh nhiễu nước."
+        />
+        <Card className="space-y-5 p-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <SelectField
+              label="Loại mục tiêu"
+              value={draft.goal_type}
+              onChange={(e) => set('goal_type', e.target.value as Profile['goal_type'])}
+            >
+              <option value="cut">Cắt mỡ (cut)</option>
+              <option value="bulk">Tăng cơ (bulk)</option>
+              <option value="recomp">Body recomposition</option>
+            </SelectField>
+            <TextField
+              label="Tốc độ thay đổi (kg/tuần)"
+              type="number"
+              step="0.1"
+              inputMode="decimal"
+              value={draft.weekly_target_rate_kg}
+              onChange={(e) => set('weekly_target_rate_kg', Number.parseFloat(e.target.value) || 0)}
+              hint="Âm là giảm cân, dương là tăng cân."
+            />
+            <TextField
+              label="Calo mục tiêu nạp (kcal)"
+              type="number"
+              inputMode="numeric"
+              value={draft.target_calories}
+              onChange={(e) => set('target_calories', Number.parseInt(e.target.value, 10) || 0)}
+              hint={`TDEE hiện tại ${formatNumber(draft.current_tdee)} kcal`}
+            />
+          </div>
+        </Card>
+      </section>
+
+      {/* Macro split */}
+      <section aria-labelledby="macro-targets" className="space-y-5">
+        <SectionHead
+          title={<span id="macro-targets">Mục tiêu macro</span>}
+          meta={`Tổng năng lượng từ macro: ${formatNumber(
+            draft.macros_target.protein_g * 4 + draft.macros_target.carbs_g * 4 + draft.macros_target.fat_g * 9,
+          )} kcal`}
+        />
+        <Card className="space-y-5 p-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <TextField
+              label="Protein (g)"
+              type="number"
+              inputMode="numeric"
+              value={draft.macros_target.protein_g}
+              onChange={(e) => setMacro('protein_g', Number.parseInt(e.target.value, 10) || 0)}
+              hint={`≈ ${formatNumber(draft.macros_target.protein_g * 4)} kcal từ đạm`}
+            />
+            <TextField
+              label="Carbs (g)"
+              type="number"
+              inputMode="numeric"
+              value={draft.macros_target.carbs_g}
+              onChange={(e) => setMacro('carbs_g', Number.parseInt(e.target.value, 10) || 0)}
+              hint="Ưu tiên quanh khung tập để giữ hiệu suất."
+            />
+            <TextField
+              label="Fat (g)"
+              type="number"
+              inputMode="numeric"
+              value={draft.macros_target.fat_g}
+              onChange={(e) => setMacro('fat_g', Number.parseInt(e.target.value, 10) || 0)}
+              hint="Không nên xuống dưới 0,5 g cho mỗi kg cân nặng."
+            />
+          </div>
+        </Card>
+      </section>
+
+      {/* Training schedule */}
+      <section aria-labelledby="training-split" className="space-y-5">
+        <SectionHead
+          title={<span id="training-split">Lịch tập</span>}
+          meta="Số buổi mỗi tuần và giáo án phân chia đang theo."
+        />
+        <Card className="space-y-5 p-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <TextField
+              label="Số buổi tập mỗi tuần"
+              type="number"
+              inputMode="numeric"
+              value={draft.training_days_per_week}
+              onChange={(e) => set('training_days_per_week', Number.parseInt(e.target.value, 10) || 0)}
+            />
+            <TextField
+              label="Giáo án phân chia"
+              value={draft.split_name ?? ''}
+              onChange={(e) => set('split_name', e.target.value)}
+              placeholder="VD: Upper / Lower (4 buổi)"
+            />
+          </div>
+        </Card>
+      </section>
     </div>
   );
 }

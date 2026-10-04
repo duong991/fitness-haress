@@ -2,59 +2,279 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   Fitness Harness — design tokens codified from DESIGN-notion.md
+   ----------------------------------------------------------------------------
+   The measured rule set this file encodes (each rule has a test):
+   R1  Page canvas is warm paper (#f6f5f4), never clinical white.
+       Test: does any full-page section background resolve to #ffffff?
+   R2  Cards / fields are pure white (#ffffff) on that canvas.
+       Test: does a card share the page background colour?
+   R3  Exactly ONE structural accent: #0075de, only on primary actions,
+       active nav and links.  Test: does a non-action element use #0075de?
+   R4  Sticker colours (pink/teal/orange/green/purple/sky) are decorative
+       only: illustration bands, icon tiles, category dots. Never a CTA fill
+       and never a progress-fill.  Test: is any button/CTA painted sticker?
+   R5  Elevation is hairline + many near-transparent layers, never a hard cast.
+   R6  Radius lock: cards 12px, wells 16px, chips 999px, inputs 4px,
+       buttons 999px, sidebar rows 6px.  Test: any value outside the set?
+   R7  Type is one family (Inter). Display sizes carry explicit negative
+       tracking.  Body stays 400; 700 belongs to headlines.
+   R8  Exactly one inverted "night" band per page, at most.
+   ========================================================================== */
+
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  /* Canvas & surface */
+  --canvas: #f6f5f4;
+  --surface: #ffffff;
+  --hairline: #e6e6e6;
+  --hairline-soft: #f1f1ef;
+
+  /* Structural accent (single) */
+  --primary: #0075de;
+  --primary-active: #005bab;
+  --primary-soft: #eaf3fd;
+  --on-primary: #ffffff;
+  --night: #213183;
+  --night-deep: #1a2769;
+
+  /* Ink ramp */
+  --ink: #1a1a19;
+  --ink-secondary: #31302e;
+  --ink-muted: #615d59;
+  --ink-faint: #6f6a64;
+
+  /* Decorative sticker palette (never structural) */
+  --sticker-sky: #62aef0;
+  --sticker-purple: #d6b6f6;
+  --sticker-purple-deep: #391c57;
+  --sticker-pink: #ff64c8;
+  --sticker-orange: #dd5b00;
+  --sticker-orange-deep: #793400;
+  --sticker-teal: #2a9d99;
+  --sticker-green: #1aae39;
+  --sticker-brown: #523410;
+
+  /* Status ink. Not a second brand accent: these only ever mark deltas,
+     validation and destructive affordances, never a call to action. Every
+     value clears WCAG AA (4.5:1) on white and on --canvas. */
+  --ok-ink: #157a2b;
+  --ok-surface: #edf7ef;
+  --ok-line: #b7ddc0;
+  --bad-ink: #a03333;
+  --bad-surface: #fdf3f3;
+  --bad-line: #f0c9c9;
+
+  /* Elevation — many near-transparent layers, never one hard cast */
+  --elev-1:
+    rgba(0, 0, 0, 0.01) 0 0.175px 1.041px,
+    rgba(0, 0, 0, 0.02) 0 0.8px 2.925px,
+    rgba(0, 0, 0, 0.027) 0 2.025px 7.847px,
+    rgba(0, 0, 0, 0.04) 0 4px 18px;
+  --elev-2:
+    rgba(0, 0, 0, 0.01) 0 0.175px 1.041px,
+    rgba(0, 0, 0, 0.02) 0 0.8px 2.925px,
+    rgba(0, 0, 0, 0.027) 0 2.025px 7.847px,
+    rgba(0, 0, 0, 0.04) 0 5px 24px,
+    rgba(0, 0, 0, 0.05) 0 23px 52px;
+
+  /* Rhythm */
+  --gutter: 40px;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  overflow-x: hidden;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-feature-settings: "lnum" 1, "locl" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* No overflow-x hack here: every wide element (the database tables) already
+       sits inside its own scroll container, so a global clip would only hide
+       real overflow instead of fixing it. */
+  }
+
+  /* Numbers line up in every table and metric block without a second family */
+  .tnum,
+  table,
+  input[type="number"] {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* One global focus signal, in the brand accent */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--ink);
+  }
+
+  /* A field's placeholder is metadata, not a label */
+  ::placeholder {
+    color: var(--ink-faint);
+    opacity: 1;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d8d5d1;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #bcb8b3;
+    background-clip: content-box;
+  }
 }
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #121215;
-}
-::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+@layer components {
+  /* R6 — the radius lock, expressed once. Five values, no others. */
+  .r-well { border-radius: 16px; }   /* large containers, image wells */
+  .r-card { border-radius: 12px; }   /* cards, tiles, table shells */
+  .r-utility { border-radius: 8px; } /* nav / utility buttons, menu rows */
+  .r-row { border-radius: 6px; }     /* sidebar rows, list rows */
+  .r-input { border-radius: 4px; }   /* form fields, inline chips */
+  .r-chip { border-radius: 9999px; } /* marketing CTAs, badges, dots */
+
+  /* R5 — the two elevation levels, and nothing in between */
+  .elev-1 { box-shadow: var(--elev-1); }
+  .elev-2 { box-shadow: var(--elev-2); }
+
+  /* R2 — the workhorse surface: white on warm paper, hairline edge, flat */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+  }
+
+  /* R4 — decorative sticker band on a card head */
+  .sticker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+  }
+
+  /* Notion database view chrome */
+  .db-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .db-table th {
+    background: var(--canvas);
+    border-bottom: 1px solid var(--hairline);
+    color: var(--ink-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 12px;
+    white-space: nowrap;
+  }
+  .db-table td {
+    border-bottom: 1px solid var(--hairline-soft);
+    font-size: 13px;
+    padding: 10px 12px;
+    color: var(--ink-secondary);
+    vertical-align: middle;
+  }
+  .db-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .db-table tbody tr {
+    transition: background-color 120ms ease;
+  }
+  .db-table tbody tr:hover {
+    background: #fbfaf9;
+  }
+  .db-table tr.group-row td {
+    background: #fbfaf9;
+    color: var(--ink);
+    font-weight: 600;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .db-table tr.group-row:hover td {
+    background: #f7f6f4;
+  }
+
+  /* Grouped-row hover reveals the row action */
+  .row-action {
+    opacity: 0;
+    transition: opacity 120ms ease, color 120ms ease;
+  }
+  tr:hover .row-action,
+  .row-action:focus-visible {
+    opacity: 1;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
 }
 
-/* Glass & Neon effects */
-.cyber-card {
-  background: #121215;
-  border: 1px solid #27272a;
-  border-radius: 0.75rem;
-  transition: all 0.2s ease-in-out;
-}
-.cyber-card:hover {
-  border-color: #3f3f46;
-}
-.cyber-card-active {
-  background: #15181e;
-  border-color: #a3e635;
-  box-shadow: 0 0 15px rgba(163, 230, 53, 0.15);
+@layer utilities {
+  /* Tabular figures for every metric */
+  .font-metric {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
 }
 
-.neon-border-lime {
-  border-color: #a3e635;
-  box-shadow: 0 0 12px rgba(163, 230, 53, 0.2);
+/* R8 + motion discipline: the single night band breathes, nothing else does */
+@keyframes night-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2%, -3%, 0) scale(1.04); }
 }
-.neon-border-cyan {
-  border-color: #06b6d4;
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-.neon-border-orange {
-  border-color: #f97316;
-  box-shadow: 0 0 12px rgba(249, 115, 22, 0.2);
+
+@keyframes slide-from-right {
+  from { transform: translate3d(24px, 0, 0); opacity: 0; }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+
+.animate-night-drift {
+  animation: night-drift 18s ease-in-out infinite;
+}
+.animate-rise-in {
+  animation: rise-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.animate-drawer-in {
+  animation: slide-from-right 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

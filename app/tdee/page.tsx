@@ -1,33 +1,46 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { TrendingUp, RefreshCw, Zap, ShieldAlert, CheckCircle2, ArrowRight } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { TdeeHistoryEntry, Profile } from '@/lib/data';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ChartNoAxesCombined,
+  CheckCircle2,
+  Info,
+  RefreshCw,
+  TriangleAlert,
+} from 'lucide-react';
+import { Profile, TdeeHistoryEntry } from '@/lib/data';
+import { formatDecimal, formatNumber } from '@/lib/format';
+import Button from '@/components/ui/Button';
+import { Card, EmptyState, SectionHead, SkeletonRows } from '@/components/ui/Card';
+import { PageHeader, StatBlock } from '@/components/ui/PageHeader';
 
 export default function TdeePage() {
   const [history, setHistory] = useState<TdeeHistoryEntry[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
-  const [reviewResult, setReviewResult] = useState<string | null>(null);
+  const [result, setResult] = useState<{ tdee: number; target: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function loadData() {
+  const loadData = useCallback(() => {
     fetch('/api/tdee')
-      .then(res => res.json())
-      .then(data => setHistory(data));
+      .then((res) => res.json())
+      .then(setHistory)
+      .catch(() => setHistory([]));
 
     fetch('/api/profile')
-      .then(res => res.json())
-      .then(data => setProfile(data));
-  }
+      .then((res) => res.json())
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   async function handleRunWeeklyReview() {
     setLoading(true);
-    setReviewResult(null);
+    setResult(null);
+    setError(null);
     try {
       const res = await fetch('/api/tdee', {
         method: 'POST',
@@ -36,140 +49,210 @@ export default function TdeePage() {
       });
       const data = await res.json();
       if (data.success) {
-        setReviewResult(`Review thành công! TDEE tính toán: ${data.entry.calculated_tdee} kcal. Calo mục tiêu mới: ${data.entry.recommended_target_calories} kcal.`);
+        setResult({
+          tdee: data.entry.calculated_tdee,
+          target: data.entry.recommended_target_calories,
+        });
         loadData();
+        window.dispatchEvent(new CustomEvent('fitness-data-updated'));
       } else {
-        alert(data.error || 'Lỗi khi tính TDEE');
+        setError('Chưa đủ dữ liệu cân nặng để chạy đánh giá tuần.');
       }
-    } catch (e) {
-      alert('Không thể kết nối API TDEE');
+    } catch {
+      setError('Không kết nối được thuật toán Adaptive TDEE. Thử lại sau giây lát.');
     } finally {
       setLoading(false);
     }
   }
 
-  if (!profile) return null;
-
-  return (
-    <div className="space-y-6 pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-2xl border border-surface-border">
-        <div className="flex items-center gap-3">
-          <TrendingUp className="w-7 h-7 text-neon-lime" />
-          <div>
-            <h1 className="text-xl font-bold text-white">Adaptive TDEE & Chuyển Hóa Năng Lượng</h1>
-            <p className="text-xs text-zinc-400">Thuật toán tự động thích ứng dựa trên calo nạp và biến động cân nặng thực tế</p>
-          </div>
-        </div>
-
-        <button
+  const header = (
+    <PageHeader
+      title="Adaptive TDEE"
+      description="Đo mức tiêu hao năng lượng thực tế từ biến động cân nặng và calo nạp, giới hạn điều chỉnh ±100-150 kcal mỗi tuần."
+      icon={ChartNoAxesCombined}
+      actions={
+        <Button
+          variant="primary"
+          icon={<RefreshCw className={loading ? 'animate-spin' : undefined} />}
           onClick={handleRunWeeklyReview}
           disabled={loading}
-          className="px-5 py-2.5 rounded-xl bg-neon-lime text-black font-extrabold text-xs uppercase tracking-wider hover:bg-neon-lime/90 disabled:opacity-50 transition-all flex items-center gap-2 shadow-lg shadow-neon-lime/20"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Đang phân tích...' : 'Chạy Review Tuần Mới'}
-        </button>
+          {loading ? 'Đang phân tích...' : 'Chạy đánh giá tuần'}
+        </Button>
+      }
+    />
+  );
+
+  if (!profile) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <SkeletonRows rows={2} cols={4} />
+        <SkeletonRows rows={3} cols={6} />
       </div>
+    );
+  }
 
-      {reviewResult && (
-        <div className="p-4 rounded-xl bg-neon-lime/10 border border-neon-lime/30 text-neon-lime text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-          <span>{reviewResult}</span>
+  const deficit = profile.current_tdee - profile.target_calories;
+  const latest = history[history.length - 1];
+
+  return (
+    <div className="space-y-10 pb-8">
+      {header}
+
+      {/* Outcome of the most recent review, inline rather than a toast. */}
+      {result ? (
+        <div className="flex items-start gap-2.5 r-card border border-sticker-green-line bg-sticker-green-soft px-4 py-3">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-ok" />
+          <p className="text-[13px] leading-relaxed text-ink">
+            Đã ghi một mốc mới vào tdee_history.json. TDEE đo được{' '}
+            <strong className="font-metric">{formatNumber(result.tdee)} kcal</strong>, calo mục tiêu
+            đề xuất <strong className="font-metric">{formatNumber(result.target)} kcal</strong>.
+          </p>
         </div>
-      )}
+      ) : null}
 
-      {/* Metrics Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="cyber-card p-5">
-          <span className="text-xs text-zinc-400 block mb-1">Adaptive TDEE Hiện Tại</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-neon-lime">{profile.current_tdee}</span>
-            <span className="text-xs text-zinc-400">kcal/ngày</span>
+      {error ? (
+        <div className="flex items-start gap-2.5 r-card border border-bad-line bg-bad-surface px-4 py-3">
+          <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-bad" />
+          <p className="text-[13px] leading-relaxed text-ink">{error}</p>
+        </div>
+      ) : null}
+
+      {/* Current model */}
+      <section aria-labelledby="current-model" className="space-y-5">
+        <SectionHead
+          title={<span id="current-model">Con số đang áp dụng</span>}
+          meta={`Cập nhật lần cuối ${profile.updated_at} · giáo án ${profile.split_name ?? '—'}`}
+        />
+
+        <Card className="p-5">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
+            <StatBlock
+              label="Adaptive TDEE đo được"
+              value={formatNumber(profile.current_tdee)}
+              unit="kcal/ngày"
+              meta="Mức tiêu hao thực tế"
+            />
+            <StatBlock
+              label="Calo mục tiêu tuần này"
+              value={formatNumber(profile.target_calories)}
+              unit="kcal/ngày"
+              meta={
+                deficit > 0
+                  ? `Thâm hụt ${formatNumber(deficit)} kcal/ngày`
+                  : `Thặng dư ${formatNumber(Math.abs(deficit))} kcal/ngày`
+              }
+            />
+            <StatBlock
+              label="BMR ban đầu"
+              value={formatNumber(profile.initial_bmr)}
+              unit="kcal"
+              meta="Mifflin-St Jeor"
+            />
+            <StatBlock
+              label="Tốc độ mục tiêu"
+              value={formatDecimal(profile.weekly_target_rate_kg)}
+              unit="kg/tuần"
+              meta="0,5% - 0,7% trọng lượng cơ thể"
+            />
+          </dl>
+        </Card>
+      </section>
+
+      {/* History */}
+      <section aria-labelledby="history" className="space-y-5">
+        <SectionHead
+          title={<span id="history">Lịch sử đánh giá tuần</span>}
+          meta={
+            latest
+              ? `${history.length} mốc đã ghi · gần nhất ${latest.week_start} → ${latest.week_end}`
+              : 'Chưa có mốc đánh giá nào'
+          }
+        />
+
+        {history.length > 0 ? (
+          <div className="card overflow-hidden">
+            <div className="max-h-[460px] overflow-auto">
+              <table className="db-table min-w-[900px]">
+                <thead className="sticky top-0 z-10">
+                  <tr>
+                    <th>Giai đoạn</th>
+                    <th className="text-right">Cân TB</th>
+                    <th className="text-right">Biến động</th>
+                    <th className="text-right">Calo nạp TB</th>
+                    <th className="text-right">TDEE tính</th>
+                    <th className="text-right">Đề xuất</th>
+                    <th>Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...history].reverse().map((entry, idx) => (
+                    <tr key={`${entry.week_start}-${idx}`}>
+                      <td className="whitespace-nowrap font-metric text-ink">
+                        {entry.week_start} → {entry.week_end}
+                      </td>
+                      <td className="text-right font-metric font-semibold text-ink">
+                        {entry.avg_weight_kg} kg
+                      </td>
+                      <td className="text-right font-metric">
+                        <span
+                          className={
+                            entry.weight_change_kg <= 0 ? 'text-ok' : 'text-sticker-orange-deep'
+                          }
+                        >
+                          {entry.weight_change_kg > 0 ? '+' : ''}
+                          {entry.weight_change_kg} kg
+                        </span>
+                      </td>
+                      <td className="text-right font-metric text-ink-muted">
+                        {formatNumber(entry.avg_calories_in)} kcal
+                      </td>
+                      <td className="text-right font-metric font-semibold text-ink">
+                        {formatNumber(entry.calculated_tdee)} kcal
+                      </td>
+                      <td className="text-right font-metric font-semibold text-primary-active">
+                        {formatNumber(entry.recommended_target_calories)} kcal
+                      </td>
+                      <td className="max-w-[280px] text-ink-muted">{entry.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <span className="text-[11px] text-zinc-500 mt-1 block">Mức tiêu hao thực tế đo lường</span>
-        </div>
+        ) : (
+          <EmptyState
+            icon={<ChartNoAxesCombined />}
+            title="Chưa có mốc đánh giá tuần nào"
+            description="Chạy đánh giá khi đã có ít nhất 7 ngày ghi cân nặng và calo nạp liên tục để thuật toán bám đúng thực tế."
+            action={
+              <Button variant="primary" icon={<RefreshCw />} onClick={handleRunWeeklyReview} disabled={loading}>
+                Chạy đánh giá tuần
+              </Button>
+            }
+          />
+        )}
+      </section>
 
-        <div className="cyber-card p-5">
-          <span className="text-xs text-zinc-400 block mb-1">Mục Tiêu Calo Tuần Này</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-white">{profile.target_calories}</span>
-            <span className="text-xs text-zinc-400">kcal/ngày</span>
+      {/* Method note */}
+      <section aria-label="Cách thuật toán hoạt động">
+        <Card className="flex gap-3.5 p-5">
+          <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-faint" strokeWidth={1.75} />
+          <div className="space-y-2">
+            <h2 className="text-title text-ink">Cách phá trạng thái đứng cân</h2>
+            <p className="max-w-[68ch] text-body-sm leading-relaxed text-ink-muted">
+              Khi thâm hụt calo kéo dài, cơ thể tự hạ mức vận động vô thức. Thuật toán đo lượng mỡ
+              thực sự giải phóng theo hệ số 7.700 kcal cho mỗi kg mỡ, thay vì tin vào con số ước tính
+              ban đầu. Nếu tốc độ giảm chững lại, calo mục tiêu chỉ dịch tối đa 100-150 kcal mỗi tuần
+              để loại nhiễu nước và glycogen.
+            </p>
+            <p className="font-metric text-[12px] text-ink-faint">
+              TDEE = calo nạp trung bình tuần − (biến thiên cân nặng × 7.700 / số ngày)
+            </p>
           </div>
-          <span className="text-[11px] text-neon-cyan mt-1 block">
-            Thâm hụt {profile.current_tdee - profile.target_calories} kcal/ngày
-          </span>
-        </div>
-
-        <div className="cyber-card p-5">
-          <span className="text-xs text-zinc-400 block mb-1">BMR Cơ Bản Ban Đầu</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-zinc-300">{profile.initial_bmr}</span>
-            <span className="text-xs text-zinc-400">kcal</span>
-          </div>
-          <span className="text-[11px] text-zinc-500 mt-1 block">Chuyển hóa tĩnh (Mifflin-St Jeor)</span>
-        </div>
-
-        <div className="cyber-card p-5">
-          <span className="text-xs text-zinc-400 block mb-1">Tốc Độ Cắt Mỡ Dự Kiến</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-neon-orange">{profile.weekly_target_rate_kg}</span>
-            <span className="text-xs text-zinc-400">kg/tuần</span>
-          </div>
-          <span className="text-[11px] text-zinc-500 mt-1 block">An toàn bảo toàn cơ nạc</span>
-        </div>
-      </div>
-
-      {/* History Table */}
-      <div className="cyber-card p-6 space-y-4">
-        <h2 className="font-bold text-white text-base">Lịch Sử Đánh Giá & Thích Ứng Qua Các Tuần</h2>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-zinc-800 text-zinc-400 uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-4">Giai đoạn</th>
-                <th className="py-3 px-4">Cân nặng TB</th>
-                <th className="py-3 px-4">Biến động</th>
-                <th className="py-3 px-4">Calo nạp TB</th>
-                <th className="py-3 px-4">TDEE tính toán</th>
-                <th className="py-3 px-4">Calo đề xuất tuần tới</th>
-                <th className="py-3 px-4">Nhận xét</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/60 font-mono">
-              {history.map((entry, idx) => (
-                <tr key={idx} className="hover:bg-zinc-900/40">
-                  <td className="py-3 px-4 text-zinc-300">{entry.week_start} → {entry.week_end}</td>
-                  <td className="py-3 px-4 text-white font-bold">{entry.avg_weight_kg} kg</td>
-                  <td className="py-3 px-4">
-                    <span className={entry.weight_change_kg <= 0 ? 'text-neon-lime' : 'text-neon-orange'}>
-                      {entry.weight_change_kg > 0 ? `+${entry.weight_change_kg}` : entry.weight_change_kg} kg
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-zinc-300">{entry.avg_calories_in} kcal</td>
-                  <td className="py-3 px-4 text-neon-lime font-bold">{entry.calculated_tdee} kcal</td>
-                  <td className="py-3 px-4 text-neon-cyan font-bold">{entry.recommended_target_calories} kcal</td>
-                  <td className="py-3 px-4 font-sans text-zinc-400 max-w-xs truncate">{entry.notes}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Explanation Card */}
-      <div className="cyber-card p-6 bg-zinc-900/40 border border-zinc-800 space-y-3">
-        <div className="flex items-center gap-2 text-white font-bold text-sm">
-          <Zap className="w-4 h-4 text-neon-lime" />
-          <span>Cách Hệ Thống Tránh "Đứng Cân" (Plateau Breaker)</span>
-        </div>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          Khi bạn ăn thâm hụt calo trong thời gian dài, cơ thể tự động hạ mức chuyển hóa (giảm hoạt động vô thức NEAT, giảm thân nhiệt nhẹ). 
-          Thuật toán Adaptive TDEE sẽ đo lường lượng mỡ thực sự mất đi dựa trên 7700 kcal/kg mỡ. 
-          Nếu tốc độ giảm bị chững, calo mục tiêu sẽ được tự động hạ xuống một nấc nhỏ (tối đa -100 ~ -150 kcal) để bạn tiếp tục giảm mỡ mà không cần đoán mò.
-        </p>
-      </div>
+        </Card>
+      </section>
     </div>
   );
 }

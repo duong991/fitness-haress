@@ -1,8 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Sparkles, X, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Sparkles, Trash2, Utensils } from 'lucide-react';
 import { FoodItem } from '@/lib/data';
+import { cx } from '@/lib/cx';
+import { formatDecimal, formatNumber } from '@/lib/format';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import { TextField } from '@/components/ui/Field';
 
 interface QuickFoodModalProps {
   isOpen: boolean;
@@ -11,17 +16,30 @@ interface QuickFoodModalProps {
   onSuccess: () => void;
 }
 
+const MEAL_SLOTS = ['Bữa sáng', 'Bữa trưa', 'Bữa xế', 'Bữa tối'];
+
 export default function QuickFoodModal({ isOpen, onClose, date, onSuccess }: QuickFoodModalProps) {
   const [mealName, setMealName] = useState('Bữa trưa');
   const [naturalText, setNaturalText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<FoodItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  /* Reset the draft every time the sheet reopens, so a cancelled parse never
+     leaks into the next meal. */
+  useEffect(() => {
+    if (!isOpen) {
+      setItems([]);
+      setNaturalText('');
+      setError(null);
+    }
+  }, [isOpen]);
 
   async function handleParseNaturalText() {
     if (!naturalText.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/parse-food', {
         method: 'POST',
@@ -29,189 +47,196 @@ export default function QuickFoodModal({ isOpen, onClose, date, onSuccess }: Qui
         body: JSON.stringify({ text: naturalText }),
       });
       const data = await res.json();
-      if (data.items) {
-        setItems(prev => [...prev, ...data.items]);
+      if (data.items?.length) {
+        setItems((prev) => [...prev, ...data.items]);
         setNaturalText('');
+      } else {
+        setError('Không nhận diện được món nào. Thử ghi rõ khối lượng, ví dụ "200g ức gà".');
       }
-    } catch (e) {
-      alert('Lỗi bóc tách món ăn');
+    } catch {
+      setError('Không kết nối được bộ bóc tách dinh dưỡng. Thử lại sau giây lát.');
     } finally {
       setLoading(false);
     }
   }
 
-  function removeItem(index: number) {
-    setItems(items.filter((_, i) => i !== index));
-  }
-
   async function handleSave() {
     if (items.length === 0) return;
-    setLoading(true);
+    setSaving(true);
+    setError(null);
     try {
-      // 1. Fetch current daily log
-      const resDaily = await fetch(`/api/daily/${date}`);
-      const dailyLog = await resDaily.json();
+      const res = await fetch(`/api/daily/${date}`);
+      const dailyLog = await res.json();
 
-      // 2. Add new meal or append to existing meal
       const newMeal = {
         id: `meal-${Date.now()}`,
         name: mealName,
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        items: items,
+        items,
       };
 
-      const updatedMeals = [...(dailyLog.meals || []), newMeal];
-      dailyLog.meals = updatedMeals;
-
-      // 3. Save back
       await fetch(`/api/daily/${date}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dailyLog),
+        body: JSON.stringify({ ...dailyLog, meals: [...(dailyLog.meals || []), newMeal] }),
       });
 
       onSuccess();
       onClose();
       setItems([]);
-    } catch (e) {
-      alert('Không thể lưu bữa ăn');
+    } catch {
+      setError('Không lưu được bữa ăn vào file ngày. Thử lại.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
-  const totalMealCals = items.reduce((sum, item) => sum + item.calories, 0);
-  const totalMealP = Math.round(items.reduce((sum, item) => sum + item.protein_g, 0) * 10) / 10;
-  const totalMealC = Math.round(items.reduce((sum, item) => sum + item.carbs_g, 0) * 10) / 10;
-  const totalMealF = Math.round(items.reduce((sum, item) => sum + item.fat_g, 0) * 10) / 10;
+  const totals = items.reduce(
+    (sum, item) => ({
+      calories: sum.calories + item.calories,
+      protein: sum.protein + item.protein_g,
+      carbs: sum.carbs + item.carbs_g,
+      fat: sum.fat + item.fat_g,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-surface border border-surface-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-surface-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-neon-lime"></span>
-            <h3 className="font-bold text-lg text-white">Thêm Bữa Ăn Nhanh</h3>
-          </div>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white p-1 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-5 overflow-y-auto flex-1">
-          {/* Select meal name */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-              Tên bữa ăn
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {['Bữa sáng', 'Bữa trưa', 'Bữa xế', 'Bữa tối'].map(name => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => setMealName(name)}
-                  className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
-                    mealName === name
-                      ? 'bg-neon-lime/10 border-neon-lime text-neon-lime'
-                      : 'border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                  }`}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Natural language parser input */}
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider">
-              Nhập nhanh món ăn & khối lượng (g)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={naturalText}
-                onChange={e => setNaturalText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleParseNaturalText()}
-                placeholder="VD: 200g ức gà, 150g cơm, 1 quả trứng"
-                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-neon-lime focus:ring-1 focus:ring-neon-lime"
-              />
-              <button
-                type="button"
-                onClick={handleParseNaturalText}
-                disabled={loading || !naturalText.trim()}
-                className="px-4 py-2.5 rounded-xl bg-neon-lime text-black font-bold text-sm flex items-center gap-1.5 hover:bg-neon-lime/90 disabled:opacity-50 transition-all"
-              >
-                <Sparkles className="w-4 h-4" />
-                Bóc tách
-              </button>
-            </div>
-            <p className="text-[11px] text-zinc-500 italic">
-              * Tự động tra cứu calo, protein, carbs, fat theo gram từ cơ sở dữ liệu thực phẩm.
-            </p>
-          </div>
-
-          {/* Parsed items table */}
-          {items.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-zinc-400">
-                <span>Thực phẩm trong bữa ({items.length})</span>
-                <span className="font-mono text-neon-lime font-bold">
-                  {totalMealCals} kcal | {totalMealP}P {totalMealC}C {totalMealF}F
-                </span>
-              </div>
-              <div className="space-y-2">
-                {items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs"
-                  >
-                    <div>
-                      <p className="font-medium text-white">{item.name}</p>
-                      <p className="text-zinc-400 mt-0.5">
-                        <span className="text-neon-cyan">{item.protein_g}g P</span> •{' '}
-                        <span className="text-neon-orange">{item.carbs_g}g C</span> •{' '}
-                        <span className="text-zinc-400">{item.fat_g}g F</span>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono font-bold text-white text-sm">
-                        {item.calories} kcal
-                      </span>
-                      <button
-                        onClick={() => removeItem(idx)}
-                        className="text-zinc-500 hover:text-red-400 p-1 rounded"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-surface-border flex items-center justify-end gap-3 bg-zinc-900/50">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white"
-          >
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title="Ghi bữa ăn"
+      description={`Ngày ${date} · bóc tách calo và macro theo gram trước khi lưu.`}
+      icon={<Utensils />}
+      footer={
+        <>
+          <span className="mr-auto text-[12px] text-ink-muted">
+            {items.length > 0
+              ? `${items.length} món · ${formatNumber(totals.calories)} kcal`
+              : 'Chưa có món nào'}
+          </span>
+          <Button variant="ghost" onClick={onClose}>
             Hủy
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             onClick={handleSave}
-            disabled={items.length === 0 || loading}
-            className="px-6 py-2 rounded-xl bg-neon-lime text-black font-bold text-xs uppercase tracking-wider hover:bg-neon-lime/90 disabled:opacity-50 transition-all flex items-center gap-1.5"
+            disabled={items.length === 0 || saving}
+            icon={<Plus />}
           >
-            <Plus className="w-4 h-4" />
-            Lưu vào nhật ký
-          </button>
+            {saving ? 'Đang lưu...' : 'Lưu vào nhật ký'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        {/* Meal slot: segmented control, tighter than the surrounding pills. */}
+        <fieldset>
+          <legend className="mb-2 text-[13px] font-medium text-ink-secondary">Phân loại bữa</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {MEAL_SLOTS.map((slot) => {
+              const active = mealName === slot;
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setMealName(slot)}
+                  className={cx(
+                    'r-utility border px-3 py-2 text-[13px] font-medium transition-colors active:scale-[0.98]',
+                    active
+                      ? 'border-primary bg-primary-soft text-primary-active'
+                      : 'border-hairline bg-surface text-ink-muted hover:bg-canvas hover:text-ink',
+                  )}
+                >
+                  {slot}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {/* Natural-language parse: the product's signature input. */}
+        <div className="r-card border border-hairline bg-canvas p-4">
+          <TextField
+            label="Nhập món và khối lượng"
+            value={naturalText}
+            onChange={(e) => setNaturalText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleParseNaturalText();
+              }
+            }}
+            placeholder="VD: 200g ức gà, 150g cơm, 1 quả trứng"
+            hint="Tra bảng dinh dưỡng nội bộ trước, sau đó mới ước tính theo chuẩn USDA."
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleParseNaturalText}
+              disabled={loading || !naturalText.trim()}
+              icon={<Sparkles />}
+            >
+              {loading ? 'Đang bóc tách...' : 'Bóc tách dinh dưỡng'}
+            </Button>
+            {totals.calories > 0 ? (
+              <span className="font-metric text-[12px] text-ink-muted">
+                Tạm tính {formatNumber(totals.calories)} kcal
+              </span>
+            ) : null}
+          </div>
         </div>
+
+        {error ? (
+          <p className="r-card border border-bad-line bg-bad-surface px-3 py-2 text-[13px] text-bad">
+            {error}
+          </p>
+        ) : null}
+
+        {/* Parsed lines */}
+        {items.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-[13px] font-medium text-ink-secondary">
+              Món đã nhận diện
+              <span className="ml-2 font-metric font-normal text-ink-faint">
+                {formatNumber(totals.calories)} kcal · {formatDecimal(totals.protein)}P{' '}
+                {formatDecimal(totals.carbs)}C {formatDecimal(totals.fat)}F
+              </span>
+            </p>
+
+            <ul className="divide-y divide-hairline-soft r-card border border-hairline">
+              {items.map((item, idx) => (
+                <li key={`${item.name}-${idx}`} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-ink">{item.name}</p>
+                    <p className="mt-0.5 font-metric text-[11px] text-ink-muted">
+                      {item.amount_g}g ·{' '}
+                      <span className="text-sticker-teal">{formatDecimal(item.protein_g)}P</span>{' '}
+                      <span className="text-sticker-orange-deep">
+                        {formatDecimal(item.carbs_g)}C
+                      </span>{' '}
+                      <span className="text-sticker-brown">{formatDecimal(item.fat_g)}F</span>
+                    </p>
+                  </div>
+                  <span className="font-metric text-[13px] font-semibold text-ink">
+                    {formatNumber(item.calories)} kcal
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                    aria-label={`Xóa ${item.name}`}
+                    className="flex h-7 w-7 items-center justify-center r-row text-ink-faint transition-colors hover:bg-canvas hover:text-bad"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
-    </div>
+    </Modal>
   );
 }

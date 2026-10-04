@@ -1,26 +1,39 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  Flame, 
-  Dumbbell, 
-  Scale, 
-  Plus, 
-  ChevronLeft, 
-  ChevronRight, 
-  Trophy, 
-  CheckCircle2, 
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  CalendarDays,
+  Dumbbell,
+  Flame,
+  ArrowUpRight,
+  ClipboardList,
+  Plus,
+  Scale,
+  TrendingDown,
   Utensils,
-  Sparkles,
-  TrendingDown
+  Trash2,
 } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid } from 'recharts';
 import { DailyLog, Profile } from '@/lib/data';
+import {
+  formatDateLong,
+  formatDecimal,
+  formatNumber,
+  relativeDayLabel,
+  shiftDay,
+  TODAY,
+} from '@/lib/format';
 import QuickFoodModal from '@/components/QuickFoodModal';
 import QuickWorkoutModal from '@/components/QuickWorkoutModal';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import { Card, EmptyState, Meter, Pill, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
+import { TextField } from '@/components/ui/Field';
+import { DateSwitcher, PageHeader } from '@/components/ui/PageHeader';
+import TrendCharts from '@/components/TrendCharts';
 
 export default function DashboardPage() {
-  const [currentDate, setCurrentDate] = useState('2026-10-04');
+  const [currentDate, setCurrentDate] = useState(TODAY);
   const [dailyLog, setDailyLog] = useState<DailyLog | null>(null);
   const [allLogs, setAllLogs] = useState<DailyLog[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -28,64 +41,104 @@ export default function DashboardPage() {
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [newWeight, setNewWeight] = useState('');
+  const [savingWeight, setSavingWeight] = useState(false);
 
-  function loadData() {
+  const loadData = useCallback(() => {
     fetch(`/api/daily/${currentDate}`)
-      .then(res => res.json())
-      .then(data => setDailyLog(data));
+      .then((res) => res.json())
+      .then(setDailyLog)
+      .catch(() => setDailyLog(null));
 
     fetch('/api/daily')
-      .then(res => res.json())
-      .then(data => setAllLogs(data));
+      .then((res) => res.json())
+      .then(setAllLogs)
+      .catch(() => setAllLogs([]));
 
     fetch('/api/profile')
-      .then(res => res.json())
-      .then(data => setProfile(data));
-  }
+      .then((res) => res.json())
+      .then((data: Profile) => {
+        setProfile(data);
+        setNewWeight((prev) => prev || String(data.current_weight_kg));
+      })
+      .catch(() => setProfile(null));
+  }, [currentDate]);
 
   useEffect(() => {
     loadData();
-  }, [currentDate]);
-
-  function changeDay(delta: number) {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + delta);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    setCurrentDate(`${yyyy}-${mm}-${dd}`);
-  }
+    const onUpdated = () => loadData();
+    window.addEventListener('fitness-data-updated', onUpdated);
+    return () => window.removeEventListener('fitness-data-updated', onUpdated);
+  }, [loadData]);
 
   async function handleSaveWeight() {
     if (!dailyLog || !newWeight) return;
-    const w = parseFloat(newWeight);
-    if (isNaN(w)) return;
+    const weight = Number.parseFloat(newWeight);
+    if (Number.isNaN(weight)) return;
 
-    dailyLog.weight_kg = w;
+    setSavingWeight(true);
+    try {
+      await fetch(`/api/daily/${currentDate}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...dailyLog, weight_kg: weight }),
+      });
+
+      if (profile) {
+        await fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...profile, current_weight_kg: weight }),
+        });
+      }
+
+      setIsWeightModalOpen(false);
+      loadData();
+      window.dispatchEvent(new CustomEvent('fitness-data-updated'));
+    } finally {
+      setSavingWeight(false);
+    }
+  }
+
+  async function persistLog(next: DailyLog) {
     await fetch(`/api/daily/${currentDate}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dailyLog),
+      body: JSON.stringify(next),
     });
-
-    if (profile) {
-      await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...profile, current_weight_kg: w }),
-      });
-    }
-
-    setIsWeightModalOpen(false);
-    setNewWeight('');
     loadData();
+  }
+
+  async function handleDeleteMealItem(mealId: string, itemIdx: number) {
+    if (!dailyLog) return;
+    const next = structuredClone(dailyLog);
+    const meal = next.meals.find((m) => m.id === mealId);
+    if (!meal) return;
+    meal.items.splice(itemIdx, 1);
+    if (meal.items.length === 0) {
+      next.meals = next.meals.filter((m) => m.id !== mealId);
+    }
+    await persistLog(next);
+  }
+
+  async function handleDeleteWorkoutSet(exIdx: number, setIdx: number) {
+    if (!dailyLog?.workout) return;
+    const next = structuredClone(dailyLog);
+    next.workout.exercises[exIdx].sets.splice(setIdx, 1);
+    if (next.workout.exercises[exIdx].sets.length === 0) {
+      next.workout.exercises.splice(exIdx, 1);
+    }
+    if (next.workout.exercises.length === 0) {
+      next.workout.completed = false;
+    }
+    await persistLog(next);
   }
 
   if (!dailyLog || !profile) {
     return (
-      <div className="py-20 text-center">
-        <div className="w-8 h-8 border-2 border-neon-lime border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-sm text-zinc-500 font-mono">Đang nạp dữ liệu thể hình...</p>
+      <div className="space-y-8">
+        <div className="h-[168px] animate-pulse r-well bg-night/20" />
+        <SkeletonRows rows={3} cols={4} />
+        <SkeletonRows rows={4} cols={6} />
       </div>
     );
   }
@@ -93,444 +146,447 @@ export default function DashboardPage() {
   const calConsumed = dailyLog.calories_consumed || 0;
   const calTarget = dailyLog.calories_target || profile.target_calories || 1950;
   const calRemaining = calTarget - calConsumed;
-  const calPercent = Math.min(100, Math.round((calConsumed / calTarget) * 100));
+  const calPct = calTarget > 0 ? Math.min(100, Math.round((calConsumed / calTarget) * 100)) : 0;
+  const overBudget = calConsumed > calTarget;
 
-  const pConsumed = dailyLog.macros?.protein_g || 0;
-  const pTarget = profile.macros_target.protein_g || 165;
-  const pPercent = Math.min(100, Math.round((pConsumed / pTarget) * 100));
+  const macros = [
+    {
+      key: 'protein',
+      label: 'Protein',
+      vietnamese: 'Đạm',
+      consumed: dailyLog.macros?.protein_g || 0,
+      target: profile.macros_target.protein_g || 165,
+      tone: 'teal' as StickerTone,
+      chip: 'text-sticker-teal bg-sticker-teal-soft',
+      fill: 'bg-sticker-teal',
+    },
+    {
+      key: 'carbs',
+      label: 'Carbs',
+      vietnamese: 'Tinh bột',
+      consumed: dailyLog.macros?.carbs_g || 0,
+      target: profile.macros_target.carbs_g || 195,
+      tone: 'orange' as StickerTone,
+      chip: 'text-sticker-orange-deep bg-sticker-orange-soft',
+      fill: 'bg-sticker-orange',
+    },
+    {
+      key: 'fat',
+      label: 'Fat',
+      vietnamese: 'Chất béo',
+      consumed: dailyLog.macros?.fat_g || 0,
+      target: profile.macros_target.fat_g || 55,
+      tone: 'brown' as StickerTone,
+      chip: 'text-sticker-brown bg-sticker-brown-soft',
+      fill: 'bg-sticker-brown',
+    },
+  ];
 
-  const cConsumed = dailyLog.macros?.carbs_g || 0;
-  const cTarget = profile.macros_target.carbs_g || 195;
-  const cPercent = Math.min(100, Math.round((cConsumed / cTarget) * 100));
-
-  const fConsumed = dailyLog.macros?.fat_g || 0;
-  const fTarget = profile.macros_target.fat_g || 55;
-  const fPercent = Math.min(100, Math.round((fConsumed / fTarget) * 100));
-
-  // Chart data from recent logs
-  const chartData = allLogs.slice(-7).map(l => ({
-    date: l.date.slice(5),
-    calories: l.calories_consumed || 0,
-    target: l.calories_target || profile.target_calories,
-    weight: l.weight_kg,
-  }));
+  const workouts = dailyLog.workout;
+  const hasWorkout = Boolean(workouts?.completed && workouts.exercises.length > 0);
+  const hasMeals = Boolean(dailyLog.meals && dailyLog.meals.length > 0);
 
   return (
-    <div className="space-y-6 pb-16">
-      {/* Date Switcher & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-4 rounded-2xl border border-surface-border">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => changeDay(-1)}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-            <span className="text-xs uppercase text-zinc-400 font-bold block">Ngày theo dõi</span>
-            <span className="font-mono text-base font-extrabold text-neon-lime">{currentDate}</span>
-          </div>
-          <button
-            onClick={() => changeDay(1)}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setCurrentDate('2026-10-04')}
-            className="px-3 py-2 rounded-xl bg-zinc-900/50 border border-zinc-800 text-xs font-medium text-zinc-400 hover:text-zinc-200"
-          >
-            Hôm nay
-          </button>
-        </div>
+    <div className="space-y-10 pb-8">
+      <PageHeader
+        title="Nhật ký hôm nay"
+        description="Ghi bữa ăn, set tập và cân nặng vào đúng file ngày. Mọi con số dưới đây đọc trực tiếp từ data/daily."
+        actions={
+          <>
+            <DateSwitcher date={currentDate} onChange={setCurrentDate} />
+            <Button
+              variant="primary"
+              icon={<Plus />}
+              onClick={() => setIsFoodModalOpen(true)}
+            >
+              Thêm bữa ăn
+            </Button>
+          </>
+        }
+      />
 
-        {/* Quick action triggers */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsWeightModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white transition-all"
-          >
-            <Scale className="w-4 h-4 text-neon-cyan" />
-            <span>{dailyLog.weight_kg ? `${dailyLog.weight_kg} kg` : '+ Cân nặng'}</span>
-          </button>
-          <button
-            onClick={() => setIsWorkoutModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white transition-all"
-          >
-            <Dumbbell className="w-4 h-4 text-neon-orange" />
-            <span>+ Set Tập</span>
-          </button>
-          <button
-            onClick={() => setIsFoodModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neon-lime text-black font-extrabold text-xs uppercase tracking-wider hover:bg-neon-lime/90 transition-all shadow-lg shadow-neon-lime/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Món</span>
-          </button>
-        </div>
-      </div>
+      {/* ── The single inverted "night" band for this page ─────────────── */}
+      <NightBand
+        remaining={calRemaining}
+        overBudget={overBudget}
+        consumed={calConsumed}
+        target={calTarget}
+        progress={calPct}
+        dateLabel={formatDateLong(currentDate)}
+        relative={relativeDayLabel(currentDate)}
+        onLogWorkout={() => setIsWorkoutModalOpen(true)}
+      />
 
-      {/* Hero Overview: Calorie & Macros Banner */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main Calorie Ring Card */}
-        <div className="lg:col-span-5 cyber-card p-6 flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-36 h-36 bg-neon-lime/5 rounded-full blur-2xl pointer-events-none"></div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-neon-lime" />
-              <h2 className="font-bold text-white text-base">Năng Lượng Trong Ngày</h2>
-            </div>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">
-              Target: {calTarget} kcal
-            </span>
-          </div>
+      {/* ── Notion property strip ──────────────────────────────────────── */}
+      <section aria-label="Thuộc tính ngày" className="border-y border-hairline py-4">
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+          <PropertyRow
+            icon={CalendarDays}
+            label="Ngày theo dõi"
+            value={formatDateLong(currentDate)}
+            meta={`ISO ${currentDate}`}
+          />
+          <PropertyRow
+            icon={Scale}
+            label="Cân nặng"
+            value={dailyLog.weight_kg ? `${dailyLog.weight_kg} kg` : 'Chưa ghi'}
+            meta={
+              dailyLog.weight_kg
+                ? `Mục tiêu ${profile.target_weight_kg} kg`
+                : 'Cân buổi sáng để TDEE chính xác hơn'
+            }
+            action={
+              <Button
+                variant="utility"
+                size="sm"
+                icon={<Plus />}
+                onClick={() => setIsWeightModalOpen(true)}
+              >
+                Ghi
+              </Button>
+            }
+          />
+          <PropertyRow
+            icon={TrendingDown}
+            label="Mục tiêu"
+            value={
+              profile.goal_type === 'cut'
+                ? 'Cắt mỡ'
+                : profile.goal_type === 'bulk'
+                  ? 'Tăng cơ'
+                  : 'Recomp'
+            }
+            meta={`${profile.weekly_target_rate_kg} kg / tuần · ${profile.split_name ?? ''}`}
+            action={<Pill tone="orange">Cut</Pill>}
+          />
+          <PropertyRow
+            icon={Flame}
+            label="Adaptive TDEE"
+            value={`${formatNumber(profile.current_tdee)} kcal`}
+            meta={`Thâm hụt ${formatNumber(profile.current_tdee - calTarget)} kcal / ngày`}
+            action={
+              <Link
+                href="/tdee"
+                className="inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:text-primary-active"
+              >
+                Chi tiết <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            }
+          />
+        </dl>
+      </section>
 
-          <div className="flex items-center gap-6 my-2">
-            {/* Circular representation */}
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="#27272a"
-                  strokeWidth="8"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="#a3e635"
-                  strokeWidth="8"
-                  strokeDasharray="251.2"
-                  strokeDashoffset={251.2 - (251.2 * calPercent) / 100}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute text-center">
-                <span className="font-mono text-2xl font-black text-white">{calConsumed}</span>
-                <span className="block text-[10px] text-zinc-400 font-semibold uppercase">kcal nạp</span>
-              </div>
-            </div>
+      {/* ── Energy & macro tiles ───────────────────────────────────────── */}
+      <section aria-labelledby="energy-heading" className="space-y-5">
+        <SectionHead
+          title={<span id="energy-heading">Tiến trình năng lượng &amp; macro</span>}
+          meta={
+            overBudget
+              ? `Đã vượt ${formatNumber(Math.abs(calRemaining))} kcal so với mục tiêu ${formatNumber(calTarget)} kcal.`
+              : `Còn lại ${formatNumber(calRemaining)} kcal trên mục tiêu ${formatNumber(calTarget)} kcal.`
+          }
+        />
 
-            {/* Calorie Stats */}
-            <div className="space-y-3 flex-1">
-              <div>
-                <p className="text-xs text-zinc-400">Còn lại hôm nay</p>
-                <p className={`font-mono text-xl font-bold ${calRemaining >= 0 ? 'text-neon-lime' : 'text-rose-500'}`}>
-                  {calRemaining >= 0 ? `${calRemaining} kcal` : `Vượt ${Math.abs(calRemaining)} kcal`}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
-                <TrendingDown className="w-4 h-4 text-neon-cyan" />
-                <span>
-                  Mục tiêu {profile.goal_type === 'cut' ? 'Cắt mỡ (Cut)' : profile.goal_type === 'bulk' ? 'Tăng cơ (Bulk)' : 'Body Recomp'}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Calorie tile: the one tile with a filled head band, because it is
+              the primary metric of the whole screen. */}
+          <Card tone={overBudget ? 'orange' : 'primary'} bandHeight={38} bandLabel="Calo" className="flex flex-col">
+            <div className="flex flex-1 flex-col gap-3 p-4">
+              <p className="flex items-baseline gap-1.5">
+                <span className="font-metric text-heading-2 leading-none text-ink">
+                  {formatNumber(calConsumed)}
                 </span>
-              </div>
+                <span className="font-metric text-[13px] text-ink-faint">
+                  / {formatNumber(calTarget)}
+                </span>
+              </p>
+              <Meter
+                value={calConsumed}
+                max={calTarget}
+                label="Calo nạp so với mục tiêu"
+                fillClassName={overBudget ? 'bg-sticker-orange' : 'bg-primary'}
+              />
+              <p className="mt-auto text-[12px] text-ink-muted">
+                {overBudget
+                  ? `Vượt ${formatNumber(Math.abs(calRemaining))} kcal`
+                  : `Còn ${formatNumber(calRemaining)} kcal`}
+                <span className="text-ink-faint"> · {calPct}% mục tiêu</span>
+              </p>
             </div>
-          </div>
+          </Card>
 
-          {/* Macro Progress Bars */}
-          <div className="mt-6 pt-4 border-t border-surface-border space-y-3">
-            {/* Protein */}
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-400 font-medium">Protein (Đạm)</span>
-                <span className="font-mono font-bold text-neon-cyan">{pConsumed} / {pTarget}g ({pPercent}%)</span>
-              </div>
-              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-neon-cyan h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${pPercent}%` }}
-                />
-              </div>
-            </div>
+          {macros.map((m) => {
+            const remaining = Math.round((m.target - m.consumed) * 10) / 10;
+            const pct = m.target > 0 ? Math.min(100, Math.round((m.consumed / m.target) * 100)) : 0;
 
-            {/* Carbs */}
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-400 font-medium">Carbs (Tinh bột)</span>
-                <span className="font-mono font-bold text-neon-orange">{cConsumed} / {cTarget}g ({cPercent}%)</span>
-              </div>
-              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-neon-orange h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${cPercent}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Fat */}
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-400 font-medium">Fat (Chất béo)</span>
-                <span className="font-mono font-bold text-zinc-300">{fConsumed} / {fTarget}g ({fPercent}%)</span>
-              </div>
-              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-zinc-400 h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${fPercent}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Workout Card & Quick Weight */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          {/* Today's Workout */}
-          <div className="cyber-card p-6 flex-1">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Dumbbell className="w-5 h-5 text-neon-cyan" />
-                <h3 className="font-bold text-white text-base">Nhật Ký Buổi Tập</h3>
-              </div>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
-                dailyLog.workout?.completed 
-                  ? 'bg-neon-lime/10 border border-neon-lime/30 text-neon-lime' 
-                  : 'bg-zinc-800 text-zinc-400'
-              }`}>
-                {dailyLog.workout?.completed ? 'Đã hoàn thành' : 'Chưa tập'}
-              </span>
-            </div>
-
-            {dailyLog.workout?.completed ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                  <div>
-                    <p className="font-bold text-white text-sm">{dailyLog.workout.session_name}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">Thời gian: {dailyLog.workout.duration_minutes} phút</p>
+            return (
+              <Card key={m.key} className="flex flex-col">
+                <div className="flex flex-1 flex-col gap-3 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-semibold text-ink">
+                      {m.label}
+                      <span className="ml-1.5 font-normal text-ink-faint">{m.vietnamese}</span>
+                    </p>
+                    <span className={`r-chip px-2 py-[3px] text-[11px] font-semibold ${m.chip}`}>
+                      {pct}%
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs text-zinc-400 block">Tổng tải trọng</span>
-                    <span className="font-mono text-neon-cyan font-bold text-base">{dailyLog.workout.total_volume_kg.toLocaleString()} kg</span>
-                  </div>
+
+                  <p className="flex items-baseline gap-1.5">
+                    <span className="font-metric text-heading-3 leading-none text-ink">
+                      {formatDecimal(m.consumed)}
+                    </span>
+                    <span className="font-metric text-[13px] text-ink-faint">
+                      / {formatNumber(m.target)} g
+                    </span>
+                  </p>
+
+                  <Meter
+                    value={m.consumed}
+                    max={m.target}
+                    label={`${m.label} so với mục tiêu`}
+                    fillClassName={m.fill}
+                  />
+
+                  <p className="mt-auto text-[12px] text-ink-muted">
+                    {remaining > 0 ? `Còn thiếu ${formatDecimal(remaining)} g` : 'Đã đạt mục tiêu'}
+                  </p>
                 </div>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
 
-                {/* Exercises list */}
-                <div className="space-y-2">
-                  {dailyLog.workout.exercises.map((ex, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-xs text-white">{ex.exercise_name}</span>
-                        <span className="text-[11px] text-zinc-400 font-mono">{ex.sets.length} sets</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {ex.sets.map((s, sIdx) => (
-                          <span
-                            key={sIdx}
-                            className="px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[11px] font-mono text-zinc-300"
-                          >
-                            Set {s.set_number}: <strong className="text-white">{s.weight_kg}kg</strong> × {s.reps} {s.rpe ? `(RPE ${s.rpe})` : ''}
+      {/* ── Meals database view ────────────────────────────────────────── */}
+      <section aria-labelledby="meals-heading" className="space-y-4">
+        <SectionHead
+          title={<span id="meals-heading">Bữa ăn trong ngày</span>}
+          meta={`${dailyLog.meals?.length || 0} bữa · ${formatNumber(calConsumed)} kcal đã ghi`}
+          action={
+            <Button variant="utility" size="sm" icon={<Plus />} onClick={() => setIsFoodModalOpen(true)}>
+              Thêm món
+            </Button>
+          }
+        />
+
+        {hasMeals ? (
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="db-table min-w-[720px]">
+                <thead>
+                  <tr>
+                    <th>Bữa ăn / Món</th>
+                    <th>Khối lượng</th>
+                    <th className="text-right">Calo</th>
+                    <th className="text-right">Protein</th>
+                    <th className="text-right">Carbs</th>
+                    <th className="text-right">Fat</th>
+                    <th className="w-10" />
+                  </tr>
+                </thead>
+                {dailyLog.meals.map((meal) => {
+                  const cals = meal.items.reduce((s, i) => s + i.calories, 0);
+                  const p = Math.round(meal.items.reduce((s, i) => s + i.protein_g, 0) * 10) / 10;
+                  const c = Math.round(meal.items.reduce((s, i) => s + i.carbs_g, 0) * 10) / 10;
+                  const f = Math.round(meal.items.reduce((s, i) => s + i.fat_g, 0) * 10) / 10;
+
+                  return (
+                    <tbody key={meal.id}>
+                      <tr className="group-row">
+                        <td>
+                          <span className="flex items-center gap-2">
+                            <Utensils className="h-3.5 w-3.5 text-ink-faint" strokeWidth={1.75} />
+                            {meal.name}
+                            <span className="font-metric text-[11px] font-normal text-ink-faint">
+                              {meal.time}
+                            </span>
                           </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center border border-dashed border-zinc-800 rounded-xl">
-                <Dumbbell className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                <p className="text-xs text-zinc-400">Chưa ghi nhận bài tập nào cho ngày này.</p>
-                <button
-                  onClick={() => setIsWorkoutModalOpen(true)}
-                  className="mt-3 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-white transition-all"
-                >
-                  + Ghi set tập đầu tiên
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="cyber-card p-4">
-              <span className="text-xs text-zinc-400 block mb-1">Cân Nặng Hôm Nay</span>
-              <div className="flex items-baseline gap-1">
-                <span className="font-mono text-xl font-bold text-white">
-                  {dailyLog.weight_kg ? dailyLog.weight_kg : '--'}
-                </span>
-                <span className="text-xs text-zinc-400">kg</span>
-              </div>
+                        </td>
+                        <td className="text-[11px] text-ink-faint">
+                          {meal.items.length} món
+                        </td>
+                        <td className="text-right font-metric font-semibold">{formatNumber(cals)}</td>
+                        <td className="text-right font-metric text-sticker-teal">{formatDecimal(p)}g</td>
+                        <td className="text-right font-metric text-sticker-orange-deep">{formatDecimal(c)}g</td>
+                        <td className="text-right font-metric text-sticker-brown">{formatDecimal(f)}g</td>
+                        <td />
+                      </tr>
+                      {meal.items.map((item, idx) => (
+                        <tr key={`${meal.id}-${idx}`}>
+                          <td className="pl-9 text-ink">{item.name}</td>
+                          <td className="font-metric text-ink-muted">{item.amount_g}g</td>
+                          <td className="text-right font-metric">{formatNumber(item.calories)}</td>
+                          <td className="text-right font-metric text-sticker-teal">
+                            {formatDecimal(item.protein_g)}g
+                          </td>
+                          <td className="text-right font-metric text-sticker-orange-deep">
+                            {formatDecimal(item.carbs_g)}g
+                          </td>
+                          <td className="text-right font-metric text-sticker-brown">
+                            {formatDecimal(item.fat_g)}g
+                          </td>
+                          <td className="text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMealItem(meal.id, idx)}
+                              aria-label={`Xóa ${item.name}`}
+                              className="row-action inline-flex h-7 w-7 items-center justify-center r-row text-ink-faint transition-colors hover:bg-canvas hover:text-bad"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  );
+                })}
+              </table>
             </div>
-            <div className="cyber-card p-4">
-              <span className="text-xs text-zinc-400 block mb-1">Adaptive TDEE</span>
-              <div className="flex items-baseline gap-1">
-                <span className="font-mono text-xl font-bold text-neon-lime">
-                  {profile.current_tdee}
-                </span>
-                <span className="text-xs text-zinc-400">kcal</span>
-              </div>
-            </div>
-            <div className="cyber-card p-4">
-              <span className="text-xs text-zinc-400 block mb-1">Mục Tiêu</span>
-              <div className="flex items-baseline gap-1">
-                <span className="font-mono text-xl font-bold text-neon-cyan">
-                  {profile.target_weight_kg}
-                </span>
-                <span className="text-xs text-zinc-400">kg ({profile.weekly_target_rate_kg}kg/t)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Section: 7-Day Calorie & Weight Trend */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calorie Trend Chart */}
-        <div className="cyber-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-white text-sm">Xu Hướng Nạp Calo 7 Ngày Gần Nhất</h3>
-            <span className="text-xs text-neon-lime font-mono">Đường đứt: Mục tiêu {profile.target_calories} kcal</span>
-          </div>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="date" stroke="#71717a" fontSize={11} />
-                <YAxis stroke="#71717a" fontSize={11} domain={[1200, 2600]} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '8px' }}
-                  labelStyle={{ color: '#a3e635', fontWeight: 'bold' }}
-                />
-                <Bar dataKey="calories" fill="#a3e635" radius={[4, 4, 0, 0]} name="Calo Nạp" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Weight Trend Chart */}
-        <div className="cyber-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-white text-sm">Biến Động Cân Nặng (kg)</h3>
-            <span className="text-xs text-neon-cyan font-mono">Xu hướng giảm mỡ</span>
-          </div>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="date" stroke="#71717a" fontSize={11} />
-                <YAxis stroke="#71717a" fontSize={11} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '8px' }}
-                  labelStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="weight" 
-                  stroke="#06b6d4" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#06b6d4', r: 4 }} 
-                  name="Cân nặng (kg)" 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Meals of the Day Section */}
-      <div className="cyber-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Utensils className="w-5 h-5 text-neon-lime" />
-            <h3 className="font-bold text-white text-base">Các Bữa Ăn Trong Ngày</h3>
-          </div>
-          <button
-            onClick={() => setIsFoodModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-semibold text-neon-lime hover:border-neon-lime transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Thêm Bữa
-          </button>
-        </div>
-
-        {dailyLog.meals && dailyLog.meals.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {dailyLog.meals.map((meal) => {
-              const mealCals = meal.items.reduce((s, i) => s + i.calories, 0);
-              const mealP = Math.round(meal.items.reduce((s, i) => s + i.protein_g, 0) * 10) / 10;
-              const mealC = Math.round(meal.items.reduce((s, i) => s + i.carbs_g, 0) * 10) / 10;
-              const mealF = Math.round(meal.items.reduce((s, i) => s + i.fat_g, 0) * 10) / 10;
-
-              return (
-                <div key={meal.id} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-white text-sm">{meal.name}</span>
-                      <span className="text-[11px] text-zinc-500 font-mono ml-2">[{meal.time}]</span>
-                    </div>
-                    <span className="font-mono text-xs font-bold text-neon-lime bg-zinc-800 px-2 py-0.5 rounded">
-                      {mealCals} kcal
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    {meal.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-xs text-zinc-300">
-                        <span>{item.name}</span>
-                        <span className="font-mono text-zinc-400">{item.calories} kcal</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-2 border-t border-zinc-800 flex justify-between text-[11px] text-zinc-400 font-mono">
-                    <span>Macro:</span>
-                    <span>
-                      <strong className="text-neon-cyan">{mealP}g P</strong> •{' '}
-                      <strong className="text-neon-orange">{mealC}g C</strong> •{' '}
-                      <strong className="text-zinc-300">{mealF}g F</strong>
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         ) : (
-          <div className="py-8 text-center border border-dashed border-zinc-800 rounded-xl">
-            <Utensils className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-            <p className="text-xs text-zinc-400">Chưa ghi nhận bữa ăn nào cho ngày này.</p>
-          </div>
+          <EmptyState
+            icon={<Utensils />}
+            title="Chưa có bữa ăn nào cho ngày này"
+            description="Nhập tên món kèm số gram, hệ thống sẽ tự tra bảng dinh dưỡng và cộng dồn macro vào file ngày."
+            action={
+              <Button variant="primary" icon={<Plus />} onClick={() => setIsFoodModalOpen(true)}>
+                Thêm bữa ăn
+              </Button>
+            }
+          />
         )}
-      </div>
+      </section>
 
-      {/* Weight Modal */}
-      {isWeightModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="bg-surface border border-surface-border w-full max-w-sm rounded-2xl p-6 space-y-4">
-            <h3 className="font-bold text-base text-white">Cập Nhật Cân Nặng (kg)</h3>
-            <input
-              type="number"
-              step="0.1"
-              value={newWeight}
-              onChange={e => setNewWeight(e.target.value)}
-              placeholder="VD: 71.6"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-base text-white font-mono focus:outline-none focus:border-neon-lime"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsWeightModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs text-zinc-400 hover:text-white"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleSaveWeight}
-                className="px-5 py-2 rounded-xl bg-neon-lime text-black font-bold text-xs"
-              >
-                Lưu
-              </button>
+      {/* ── Workout database view ──────────────────────────────────────── */}
+      <section aria-labelledby="workout-heading" className="space-y-4">
+        <SectionHead
+          title={<span id="workout-heading">Buổi tập gym hôm nay</span>}
+          meta={
+            hasWorkout
+              ? `${workouts?.session_name ?? 'Buổi tập'} · ${workouts?.duration_minutes ?? 0} phút · tổng volume ${formatNumber(workouts?.total_volume_kg ?? 0)} kg`
+              : 'Chưa ghi set nào cho ngày này'
+          }
+          action={
+            <Button variant="utility" size="sm" icon={<Plus />} onClick={() => setIsWorkoutModalOpen(true)}>
+              Thêm set
+            </Button>
+          }
+        />
+
+        {hasWorkout && workouts ? (
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="db-table min-w-[680px]">
+                <thead>
+                  <tr>
+                    <th>Bài tập</th>
+                    <th className="text-right">Mức tạ</th>
+                    <th className="text-right">Reps</th>
+                    <th className="text-right">RPE</th>
+                    <th className="text-right">Volume set</th>
+                    <th className="w-10" />
+                  </tr>
+                </thead>
+                {workouts.exercises.map((ex, exIdx) => (
+                  <tbody key={`${ex.exercise_id}-${exIdx}`}>
+                    <tr className="group-row">
+                      <td>
+                        <span className="flex items-center gap-2">
+                          <Dumbbell className="h-3.5 w-3.5 text-ink-faint" strokeWidth={1.75} />
+                          {ex.exercise_name}
+                        </span>
+                      </td>
+                      <td colSpan={4} className="text-[11px] font-normal text-ink-faint">
+                        {ex.sets.length} set hoàn thành
+                      </td>
+                      <td />
+                    </tr>
+                    {ex.sets.map((set, sIdx) => (
+                      <tr key={`${exIdx}-${sIdx}`}>
+                        <td className="pl-9 text-ink-muted">Set {set.set_number}</td>
+                        <td className="text-right font-metric font-semibold text-ink">
+                          {set.weight_kg} kg
+                        </td>
+                        <td className="text-right font-metric">{set.reps}</td>
+                        <td className="text-right font-metric text-ink-muted">
+                          {set.rpe ? `RPE ${set.rpe}` : '—'}
+                        </td>
+                        <td className="text-right font-metric">
+                          {formatNumber(set.weight_kg * set.reps)} kg
+                        </td>
+                        <td className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteWorkoutSet(exIdx, sIdx)}
+                            aria-label={`Xóa set ${set.set_number} của ${ex.exercise_name}`}
+                            className="row-action inline-flex h-7 w-7 items-center justify-center r-row text-ink-faint transition-colors hover:bg-canvas hover:text-bad"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                ))}
+              </table>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <EmptyState
+            icon={<ClipboardList />}
+            title="Chưa ghi set tập nào cho ngày này"
+            description="Mỗi set lưu set number, mức tạ, số reps và RPE. Hệ thống tự so với kỷ lục để cập nhật PR."
+            action={
+              <Button variant="utility" icon={<Plus />} onClick={() => setIsWorkoutModalOpen(true)}>
+                Ghi set tập
+              </Button>
+            }
+          />
+        )}
+      </section>
 
-      {/* Food and Workout Modals */}
+      {/* ── 7-day trend ────────────────────────────────────────────────── */}
+      <TrendCharts
+        logs={allLogs.filter((l) => l.date <= currentDate).slice(-7)}
+        targetCalories={profile.target_calories}
+      />
+
+      {/* ── Weight modal ───────────────────────────────────────────────── */}
+      <Modal
+        open={isWeightModalOpen}
+        onClose={() => setIsWeightModalOpen(false)}
+        title="Ghi nhận cân nặng"
+        description="Cân vào buổi sáng sau khi thức dậy để dữ liệu Adaptive TDEE có độ chính xác cao nhất."
+        size="sm"
+        icon={<Scale />}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setIsWeightModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveWeight}
+              disabled={savingWeight || !newWeight}
+            >
+              {savingWeight ? 'Đang lưu...' : 'Lưu cân nặng'}
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="Cân nặng hôm nay (kg)"
+          type="number"
+          step="0.1"
+          inputMode="decimal"
+          autoFocus
+          value={newWeight}
+          onChange={(e) => setNewWeight(e.target.value)}
+          hint={`Lần ghi gần nhất: ${profile.current_weight_kg} kg`}
+        />
+      </Modal>
+
       <QuickFoodModal
         isOpen={isFoodModalOpen}
         onClose={() => setIsFoodModalOpen(false)}
@@ -544,6 +600,178 @@ export default function DashboardPage() {
         date={currentDate}
         onSuccess={loadData}
       />
+    </div>
+  );
+}
+
+/**
+ * The one inverted band on the page: deep indigo "night", a sticker
+ * constellation, and the single most important number in the product.
+ * Elevation here comes from illustration and light, not from shadow.
+ */
+function NightBand({
+  remaining,
+  overBudget,
+  consumed,
+  target,
+  progress,
+  dateLabel,
+  relative,
+  onLogWorkout,
+}: {
+  remaining: number;
+  overBudget: boolean;
+  consumed: number;
+  target: number;
+  progress: number;
+  dateLabel: string;
+  relative: string;
+  onLogWorkout: () => void;
+}) {
+  const radius = 46;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (Math.min(100, progress) / 100) * circumference;
+
+  /* Sticker constellation: fixed coordinates so it renders identically on the
+     server and the client. Decorative only, and hidden from assistive tech. */
+  const stickers = [
+    { left: '6%', top: '22%', size: 12, color: 'var(--sticker-purple)' },
+    { left: '13%', top: '68%', size: 8, color: 'var(--sticker-sky)' },
+    { left: '24%', top: '14%', size: 7, color: 'var(--sticker-pink)' },
+    { left: '38%', top: '82%', size: 9, color: 'var(--sticker-teal)' },
+    { left: '52%', top: '10%', size: 6, color: 'var(--sticker-green)' },
+    { left: '63%', top: '74%', size: 11, color: 'var(--sticker-purple)' },
+    { left: '78%', top: '18%', size: 7, color: 'var(--sticker-orange)' },
+    { left: '88%', top: '62%', size: 9, color: 'var(--sticker-sky)' },
+    { left: '94%', top: '30%', size: 6, color: 'var(--sticker-pink)' },
+  ];
+
+  return (
+    <section
+      aria-label="Tổng quan năng lượng hôm nay"
+      className="relative overflow-hidden r-well bg-night text-white"
+    >
+      {/* Decorative depth: two drifting light fields, nothing that moves text. */}
+      <div
+        aria-hidden
+        className="animate-night-drift pointer-events-none absolute inset-0 opacity-70"
+        style={{
+          background:
+            'radial-gradient(60% 120% at 12% 0%, rgba(98,174,240,0.45) 0%, transparent 55%), radial-gradient(50% 110% at 88% 100%, rgba(214,182,246,0.35) 0%, transparent 60%)',
+        }}
+      />
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        {stickers.map((s, i) => (
+          <span
+            key={i}
+            className="absolute r-chip"
+            style={{
+              left: s.left,
+              top: s.top,
+              width: s.size,
+              height: s.size,
+              background: s.color,
+              boxShadow: `0 0 14px ${s.color}`,
+              opacity: 0.85,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.125px] text-white/65">
+            <span className="h-1.5 w-1.5 r-chip bg-white/70" aria-hidden />
+            {relative} · {dateLabel}
+          </p>
+
+          <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-display-2 leading-none text-white sm:text-display-1">
+              {formatNumber(Math.abs(remaining))}
+            </span>
+            <span className="text-body-sm text-white/70">
+              kcal {overBudget ? 'vượt mục tiêu' : 'còn lại hôm nay'}
+            </span>
+          </p>
+
+          <p className="mt-3 max-w-[52ch] text-body-sm text-white/70">
+            Đã nạp {formatNumber(consumed)} / {formatNumber(target)} kcal. Ghi thêm bữa ăn hoặc set tập
+            để cập nhật ngay.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            <Button variant="night" icon={<Dumbbell />} onClick={onLogWorkout}>
+              Ghi set tập
+            </Button>
+            <Link
+              href="/tdee"
+              className="inline-flex h-10 items-center gap-1.5 r-chip border border-white/30 px-4 text-body-sm font-medium text-white transition-colors hover:bg-white/10"
+            >
+              Xem TDEE
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Progress ring: light-on-indigo, no filled track behind it. */}
+        <div className="relative flex flex-shrink-0 items-center justify-center self-start lg:self-auto">
+          <svg width="132" height="132" viewBox="0 0 120 120" role="img" aria-label={`Đã nạp ${progress}% mục tiêu calo`}>
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="8"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke={overBudget ? 'var(--sticker-orange)' : 'var(--sticker-sky)'}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${circumference}`}
+              transform="rotate(-90 60 60)"
+              style={{ transition: 'stroke-dasharray 400ms cubic-bezier(0.2,0.8,0.2,1)' }}
+            />
+          </svg>
+          <div className="absolute text-center">
+            <p className="font-metric text-heading-3 leading-none text-white">{progress}%</p>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.125px] text-white/60">mục tiêu</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** One row of the Notion-style property list. */
+function PropertyRow({
+  icon: Icon,
+  label,
+  value,
+  meta,
+  action,
+}: {
+  icon: typeof CalendarDays;
+  label: string;
+  value: string;
+  meta?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-3">
+      <div className="min-w-0">
+        <dt className="flex items-center gap-1.5 text-[12px] text-ink-faint">
+          <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {label}
+        </dt>
+        <dd className="mt-1 truncate font-metric text-[15px] font-semibold text-ink">{value}</dd>
+        {meta ? <dd className="mt-0.5 truncate text-[12px] text-ink-muted">{meta}</dd> : null}
+      </div>
+      {action ? <div className="flex-shrink-0 pt-0.5">{action}</div> : null}
     </div>
   );
 }

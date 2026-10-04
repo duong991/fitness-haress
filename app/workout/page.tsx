@@ -1,205 +1,273 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Dumbbell, Plus, Trash2, ChevronLeft, ChevronRight, CheckCircle, Trophy, Flame } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Dumbbell, Plus, Trash2, TrendingUp, Trophy } from 'lucide-react';
 import { DailyLog, Exercise } from '@/lib/data';
+import { formatDecimal, formatNumber, relativeDayLabel, TODAY } from '@/lib/format';
 import QuickWorkoutModal from '@/components/QuickWorkoutModal';
+import Button from '@/components/ui/Button';
+import { Card, EmptyState, Pill, SectionHead, SkeletonRows } from '@/components/ui/Card';
+import { DateSwitcher, PageHeader, StatBlock } from '@/components/ui/PageHeader';
 
 export default function WorkoutPage() {
-  const [currentDate, setCurrentDate] = useState('2026-10-04');
+  const [currentDate, setCurrentDate] = useState(TODAY);
   const [dailyLog, setDailyLog] = useState<DailyLog | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
-  function loadData() {
+  const loadData = useCallback(() => {
     fetch(`/api/daily/${currentDate}`)
-      .then(res => res.json())
-      .then(data => setDailyLog(data));
+      .then((res) => res.json())
+      .then(setDailyLog)
+      .catch(() => setDailyLog(null));
 
     fetch('/api/exercises')
-      .then(res => res.json())
-      .then(data => setExercises(data));
-  }
+      .then((res) => res.json())
+      .then(setExercises)
+      .catch(() => setExercises([]));
+  }, [currentDate]);
 
   useEffect(() => {
     loadData();
-  }, [currentDate]);
-
-  function changeDay(delta: number) {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + delta);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    setCurrentDate(`${yyyy}-${mm}-${dd}`);
-  }
+    const onUpdated = () => loadData();
+    window.addEventListener('fitness-data-updated', onUpdated);
+    return () => window.removeEventListener('fitness-data-updated', onUpdated);
+  }, [loadData]);
 
   async function handleDeleteSet(exIdx: number, setIdx: number) {
-    if (!dailyLog || !dailyLog.workout) return;
-    dailyLog.workout.exercises[exIdx].sets.splice(setIdx, 1);
-    if (dailyLog.workout.exercises[exIdx].sets.length === 0) {
-      dailyLog.workout.exercises.splice(exIdx, 1);
+    if (!dailyLog?.workout) return;
+    setDeletingKey(`${exIdx}-${setIdx}`);
+    try {
+      const next: DailyLog = structuredClone(dailyLog);
+      next.workout.exercises[exIdx].sets.splice(setIdx, 1);
+      if (next.workout.exercises[exIdx].sets.length === 0) {
+        next.workout.exercises.splice(exIdx, 1);
+      }
+      if (next.workout.exercises.length === 0) {
+        next.workout.completed = false;
+      }
+      await fetch(`/api/daily/${currentDate}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      loadData();
+    } finally {
+      setDeletingKey(null);
     }
-    if (dailyLog.workout.exercises.length === 0) {
-      dailyLog.workout.completed = false;
-    }
-    await fetch(`/api/daily/${currentDate}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dailyLog),
-    });
-    loadData();
   }
 
-  if (!dailyLog) return null;
+  const header = (
+    <PageHeader
+      title="Nhật ký buổi tập"
+      description="Kiểm soát set, reps, RPE và tăng tiến tải trọng. Mỗi set vượt kỷ lục sẽ tự cập nhật personal_record trong exercises.json."
+      icon={Dumbbell}
+      actions={
+        <>
+          <DateSwitcher date={currentDate} onChange={setCurrentDate} />
+          <Button variant="primary" icon={<Plus />} onClick={() => setIsModalOpen(true)}>
+            Ghi set tập
+          </Button>
+        </>
+      }
+    />
+  );
+
+  if (!dailyLog) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <SkeletonRows rows={3} cols={4} />
+        <SkeletonRows rows={5} cols={5} />
+      </div>
+    );
+  }
 
   const workout = dailyLog.workout;
-  const isWorkoutCompleted = workout?.completed && workout.exercises.length > 0;
+  const hasWorkout = Boolean(workout?.completed && workout.exercises.length > 0);
+  const totalSets = workout?.exercises.reduce((s, e) => s + e.sets.length, 0) ?? 0;
+  const totalReps = workout?.exercises.reduce(
+    (s, e) => s + e.sets.reduce((rs, set) => rs + set.reps, 0),
+    0,
+  ) ?? 0;
+  const heaviest = workout?.exercises
+    .flatMap((e) => e.sets)
+    .reduce((max, set) => Math.max(max, set.weight_kg), 0) ?? 0;
+  const avgRpe =
+    workout && totalSets > 0
+      ? workout.exercises
+          .flatMap((e) => e.sets)
+          .reduce((s, set) => s + (set.rpe ?? 0), 0) / totalSets
+      : 0;
 
   return (
-    <div className="space-y-6 pb-16">
-      {/* Date Switcher */}
-      <div className="flex items-center justify-between bg-surface p-4 rounded-2xl border border-surface-border">
-        <div className="flex items-center gap-3">
-          <Dumbbell className="w-6 h-6 text-neon-cyan" />
-          <div>
-            <h1 className="text-lg font-bold text-white">Nhật Ký Buổi Tập Gym</h1>
-            <p className="text-xs text-zinc-400">Kiểm soát Sets, Reps, RPE và Tăng Tiến Tải Trọng (Progressive Overload)</p>
-          </div>
-        </div>
+    <div className="space-y-10 pb-8">
+      {header}
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => changeDay(-1)}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="font-mono text-sm font-bold text-white px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-xl">
-            {currentDate}
-          </span>
-          <button
-            onClick={() => changeDay(1)}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="ml-2 px-4 py-2 rounded-xl bg-neon-cyan text-black font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            + Set Tập
-          </button>
-        </div>
-      </div>
+      {hasWorkout && workout ? (
+        <>
+          {/* Session summary */}
+          <section aria-labelledby="session-summary" className="space-y-5">
+            <SectionHead
+              title={<span id="session-summary">Tổng kết buổi tập</span>}
+              meta={`${workout.session_name || 'Buổi tập'} · ${relativeDayLabel(currentDate).toLowerCase()}`}
+              action={<Pill tone="green">Hoàn thành giáo án</Pill>}
+            />
 
-      {/* Summary Header */}
-      {isWorkoutCompleted ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="cyber-card p-5">
-            <span className="text-xs text-zinc-400 block mb-1">Tên Buổi Tập</span>
-            <p className="font-bold text-white text-base">{workout.session_name || 'Buổi tập tạ'}</p>
-            <span className="text-xs text-zinc-500 mt-1 block">Thời lượng: {workout.duration_minutes || 60} phút</span>
-          </div>
-          <div className="cyber-card p-5">
-            <span className="text-xs text-zinc-400 block mb-1">Tổng Tải Trọng (Volume)</span>
-            <p className="font-mono font-black text-2xl text-neon-cyan">
-              {workout.total_volume_kg.toLocaleString()} <span className="text-xs text-zinc-400 font-normal">kg</span>
-            </p>
-            <span className="text-xs text-zinc-500 mt-1 block">Tổng = Tạ (kg) × Số Reps</span>
-          </div>
-          <div className="cyber-card p-5">
-            <span className="text-xs text-zinc-400 block mb-1">Số Bài & Tổng Set</span>
-            <p className="font-mono font-black text-2xl text-white">
-              {workout.exercises.length} <span className="text-xs text-zinc-400 font-normal">bài</span> /{' '}
-              {workout.exercises.reduce((s, e) => s + e.sets.length, 0)} <span className="text-xs text-zinc-400 font-normal">sets</span>
-            </p>
-            <span className="text-xs text-neon-lime mt-1 flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" /> Hoàn thành tốt
-            </span>
-          </div>
-        </div>
-      ) : null}
+            <Card className="p-5">
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-5">
+                <StatBlock
+                  label="Thời lượng"
+                  value={workout.duration_minutes || 0}
+                  unit="phút"
+                  meta="Theo giáo án"
+                />
+                <StatBlock
+                  label="Tổng volume"
+                  value={formatNumber(workout.total_volume_kg || 0)}
+                  unit="kg"
+                  meta="∑ tạ × reps"
+                />
+                <StatBlock
+                  label="Bài tập"
+                  value={workout.exercises.length}
+                  unit="bài"
+                  meta={`${totalSets} set hoàn thành`}
+                />
+                <StatBlock
+                  label="Tổng reps"
+                  value={formatNumber(totalReps)}
+                  unit="reps"
+                  meta={`Tạ nặng nhất ${heaviest} kg`}
+                />
+                <StatBlock
+                  label="RPE trung bình"
+                  value={avgRpe > 0 ? formatDecimal(avgRpe) : '—'}
+                  meta="Mức độ gắng sức"
+                />
+              </dl>
+            </Card>
+          </section>
 
-      {/* Exercises Detail */}
-      {isWorkoutCompleted ? (
-        <div className="space-y-4">
-          {workout.exercises.map((exercise, exIdx) => {
-            const exInfo = exercises.find(e => e.id === exercise.exercise_id);
-            const pr = exInfo?.personal_record;
+          {/* Per-exercise set logs */}
+          <section aria-labelledby="set-logs" className="space-y-5">
+            <SectionHead
+              title={<span id="set-logs">Chi tiết set theo bài</span>}
+              meta={`${workout.exercises.length} bài tập đã ghi cho ngày ${currentDate}`}
+            />
 
-            return (
-              <div key={exIdx} className="cyber-card p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-white text-base">{exercise.exercise_name}</h2>
-                    {exInfo?.target_muscle && (
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
-                        {exInfo.target_muscle}
-                      </span>
-                    )}
-                  </div>
-                  {pr && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs">
-                      <Trophy className="w-3.5 h-3.5" />
-                      <span>PR: {pr.weight_kg}kg × {pr.reps} reps</span>
+            {workout.exercises.map((exercise, exIdx) => {
+              const info = exercises.find((e) => e.id === exercise.exercise_id);
+              const pr = info?.personal_record;
+              const best = exercise.sets.reduce((max, set) => Math.max(max, set.weight_kg), 0);
+              const isPrMatched = pr ? best >= pr.weight_kg : false;
+              const volume = exercise.sets.reduce((s, set) => s + set.weight_kg * set.reps, 0);
+
+              return (
+                <Card key={`${exercise.exercise_id}-${exIdx}`} className="overflow-hidden">
+                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-hairline px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-ink">
+                        {exercise.exercise_name}
+                        {info?.target_muscle ? <Pill>{info.target_muscle}</Pill> : null}
+                      </p>
+                      <p className="mt-1 font-metric text-[12px] text-ink-muted">
+                        {exercise.sets.length} set · volume {formatNumber(volume)} kg
+                      </p>
                     </div>
-                  )}
-                </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-zinc-800 text-zinc-400 uppercase tracking-wider text-[10px]">
-                        <th className="py-2 px-3">Set</th>
-                        <th className="py-2 px-3">Mức tạ (kg)</th>
-                        <th className="py-2 px-3">Số Reps</th>
-                        <th className="py-2 px-3">RPE</th>
-                        <th className="py-2 px-3">Volume Set</th>
-                        <th className="py-2 px-3 text-right">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/60 font-mono">
-                      {exercise.sets.map((set, setIdx) => {
-                        const isPrSet = pr && set.weight_kg >= pr.weight_kg && set.reps >= pr.reps;
-                        return (
-                          <tr key={setIdx} className="hover:bg-zinc-900/40">
-                            <td className="py-2.5 px-3 font-bold text-white">{set.set_number}</td>
-                            <td className="py-2.5 px-3 text-neon-cyan font-bold">{set.weight_kg} kg</td>
-                            <td className="py-2.5 px-3 text-white">{set.reps}</td>
-                            <td className="py-2.5 px-3 text-zinc-400">{set.rpe || '--'}</td>
-                            <td className="py-2.5 px-3 text-zinc-300">{set.weight_kg * set.reps} kg</td>
-                            <td className="py-2.5 px-3 text-right">
-                              <button
-                                onClick={() => handleDeleteSet(exIdx, setIdx)}
-                                className="text-zinc-600 hover:text-rose-400 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    {pr ? (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`flex items-center gap-1.5 r-chip px-2.5 py-1 text-[11px] font-semibold ${
+                            isPrMatched
+                              ? 'bg-sticker-green-soft text-sticker-green-ink'
+                              : 'bg-sticker-orange-soft text-sticker-orange-deep'
+                          }`}
+                        >
+                          <Trophy className="h-3 w-3" strokeWidth={2} />
+                          PR {pr.weight_kg} kg × {pr.reps}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="db-table min-w-[620px]">
+                      <thead>
+                        <tr>
+                          <th>Set</th>
+                          <th className="text-right">Mức tạ</th>
+                          <th className="text-right">Reps</th>
+                          <th className="text-right">RPE</th>
+                          <th className="text-right">Volume set</th>
+                          <th className="text-right">So với PR</th>
+                          <th className="w-10" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {exercise.sets.map((set, setIdx) => {
+                          const delta = pr ? Math.round((set.weight_kg - pr.weight_kg) * 10) / 10 : null;
+                          return (
+                            <tr key={`${exIdx}-${setIdx}`}>
+                              <td className="font-metric font-semibold text-ink">S{set.set_number}</td>
+                              <td className="text-right font-metric font-semibold text-ink">
+                                {set.weight_kg} kg
+                              </td>
+                              <td className="text-right font-metric">{set.reps}</td>
+                              <td className="text-right font-metric text-ink-muted">
+                                {set.rpe ? formatDecimal(set.rpe) : '—'}
+                              </td>
+                              <td className="text-right font-metric">
+                                {formatNumber(set.weight_kg * set.reps)} kg
+                              </td>
+                              <td className="text-right font-metric">
+                                {delta === null ? (
+                                  <span className="text-ink-faint">—</span>
+                                ) : delta > 0 ? (
+                                  <span className="inline-flex items-center gap-1 text-ok">
+                                    <TrendingUp className="h-3 w-3" />+{delta} kg
+                                  </span>
+                                ) : delta === 0 ? (
+                                  <span className="text-ink-muted">Bằng PR</span>
+                                ) : (
+                                  <span className="text-ink-faint">{delta} kg</span>
+                                )}
+                              </td>
+                              <td className="text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSet(exIdx, setIdx)}
+                                  disabled={deletingKey === `${exIdx}-${setIdx}`}
+                                  aria-label={`Xóa set ${set.set_number} của ${exercise.exercise_name}`}
+                                  className="row-action inline-flex h-7 w-7 items-center justify-center r-row text-ink-faint transition-colors hover:bg-canvas hover:text-bad disabled:opacity-40"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              );
+            })}
+          </section>
+        </>
       ) : (
-        <div className="py-16 text-center cyber-card">
-          <Dumbbell className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-          <p className="text-sm text-zinc-400">Không có nhật ký buổi tập nào cho ngày này.</p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="mt-4 px-4 py-2 rounded-xl bg-neon-cyan text-black font-bold text-xs"
-          >
-            + Ghi set tập ngay
-          </button>
-        </div>
-      )}
+        <EmptyState
+          icon={<Dumbbell />}
+          title="Chưa có set tập nào cho ngày này"
+          description="Có thể đây là ngày nghỉ phục hồi. Khi bắt đầu tập, ghi từng set với mức tạ, reps và RPE để hệ thống so kỷ lục."
+          action={
+            <Button variant="primary" icon={<Plus />} onClick={() => setIsModalOpen(true)}>
+              Ghi set tập
+            </Button>
+          }
+        />      )}
 
       <QuickWorkoutModal
         isOpen={isModalOpen}

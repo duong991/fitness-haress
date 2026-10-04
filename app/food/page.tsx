@@ -1,188 +1,228 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { UtensilsCrossed, Plus, Trash2, Calendar, ChevronLeft, ChevronRight, PieChart } from 'lucide-react';
-import { DailyLog, Profile, Meal } from '@/lib/data';
+import { useCallback, useEffect, useState } from 'react';
+import { Coffee, Moon, Plus, Sandwich, Sun, Trash2, Utensils } from 'lucide-react';
+import { DailyLog, Meal, Profile } from '@/lib/data';
+import { formatDecimal, formatNumber, relativeDayLabel, TODAY } from '@/lib/format';
 import QuickFoodModal from '@/components/QuickFoodModal';
+import Button from '@/components/ui/Button';
+import { Card, EmptyState, Meter, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
+import { DateSwitcher, PageHeader } from '@/components/ui/PageHeader';
+
+const MEAL_ICON: Record<string, typeof Coffee> = {
+  'Bữa sáng': Coffee,
+  'Bữa trưa': Sun,
+  'Bữa xế': Sandwich,
+  'Bữa tối': Moon,
+};
+
+/* Decorative only: a meal slot gets a sticker tone so the four groups read
+   apart at a glance. These never paint a button or a progress fill. */
+const MEAL_TONE: Record<string, StickerTone> = {
+  'Bữa sáng': 'orange',
+  'Bữa trưa': 'sky',
+  'Bữa xế': 'purple',
+  'Bữa tối': 'teal',
+};
 
 export default function FoodPage() {
-  const [currentDate, setCurrentDate] = useState('2026-10-04');
+  const [currentDate, setCurrentDate] = useState(TODAY);
   const [dailyLog, setDailyLog] = useState<DailyLog | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
-  function loadData() {
+  const loadData = useCallback(() => {
     fetch(`/api/daily/${currentDate}`)
-      .then(res => res.json())
-      .then(data => setDailyLog(data));
+      .then((res) => res.json())
+      .then(setDailyLog)
+      .catch(() => setDailyLog(null));
 
     fetch('/api/profile')
-      .then(res => res.json())
-      .then(data => setProfile(data));
-  }
+      .then((res) => res.json())
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, [currentDate]);
 
   useEffect(() => {
     loadData();
-  }, [currentDate]);
-
-  function changeDay(delta: number) {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + delta);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    setCurrentDate(`${yyyy}-${mm}-${dd}`);
-  }
+    const onUpdated = () => loadData();
+    window.addEventListener('fitness-data-updated', onUpdated);
+    return () => window.removeEventListener('fitness-data-updated', onUpdated);
+  }, [loadData]);
 
   async function handleDeleteItem(mealId: string, itemIdx: number) {
     if (!dailyLog) return;
-    const meal = dailyLog.meals.find(m => m.id === mealId);
-    if (!meal) return;
-    meal.items.splice(itemIdx, 1);
-    if (meal.items.length === 0) {
-      dailyLog.meals = dailyLog.meals.filter(m => m.id !== mealId);
+    setDeletingKey(`${mealId}-${itemIdx}`);
+    try {
+      const next: DailyLog = structuredClone(dailyLog);
+      const meal = next.meals.find((m) => m.id === mealId);
+      if (!meal) return;
+      meal.items.splice(itemIdx, 1);
+      if (meal.items.length === 0) {
+        next.meals = next.meals.filter((m) => m.id !== mealId);
+      }
+      await fetch(`/api/daily/${currentDate}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      loadData();
+    } finally {
+      setDeletingKey(null);
     }
-    await fetch(`/api/daily/${currentDate}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dailyLog),
-    });
-    loadData();
   }
 
-  if (!dailyLog || !profile) return null;
+  const header = (
+    <PageHeader
+      title="Nhật ký dinh dưỡng"
+      description="Theo dõi calo nạp vào và phân tách Protein / Carbs / Fat cho từng bữa. Dữ liệu ghi trực tiếp vào data/daily."
+      icon={Utensils}
+      actions={
+        <>
+          <DateSwitcher date={currentDate} onChange={setCurrentDate} />
+          <Button variant="primary" icon={<Plus />} onClick={() => setIsModalOpen(true)}>
+            Thêm bữa ăn
+          </Button>
+        </>
+      }
+    />
+  );
+
+  if (!dailyLog || !profile) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <SkeletonRows rows={2} cols={4} />
+        <SkeletonRows rows={4} cols={6} />
+      </div>
+    );
+  }
+
+  const consumed = dailyLog.calories_consumed || 0;
+  const target = dailyLog.calories_target || profile.target_calories;
+  const remaining = target - consumed;
+
+  const macroCards = [
+    {
+      label: 'Protein',
+      vietnamese: 'Đạm',
+      consumed: dailyLog.macros?.protein_g || 0,
+      target: profile.macros_target.protein_g,
+      fill: 'bg-sticker-teal',
+      text: 'text-sticker-teal',
+    },
+    {
+      label: 'Carbs',
+      vietnamese: 'Tinh bột',
+      consumed: dailyLog.macros?.carbs_g || 0,
+      target: profile.macros_target.carbs_g,
+      fill: 'bg-sticker-orange',
+      text: 'text-sticker-orange-deep',
+    },
+    {
+      label: 'Fat',
+      vietnamese: 'Chất béo',
+      consumed: dailyLog.macros?.fat_g || 0,
+      target: profile.macros_target.fat_g,
+      fill: 'bg-sticker-brown',
+      text: 'text-sticker-brown',
+    },
+  ];
 
   return (
-    <div className="space-y-6 pb-16">
-      {/* Date Switcher */}
-      <div className="flex items-center justify-between bg-surface p-4 rounded-2xl border border-surface-border">
-        <div className="flex items-center gap-3">
-          <UtensilsCrossed className="w-6 h-6 text-neon-lime" />
-          <div>
-            <h1 className="text-lg font-bold text-white">Nhật Ký Dinh Dưỡng & Calo</h1>
-            <p className="text-xs text-zinc-400">Quản lý các bữa ăn, macro và mức tiêu thụ năng lượng</p>
-          </div>
-        </div>
+    <div className="space-y-10 pb-8">
+      {header}
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => changeDay(-1)}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="font-mono text-sm font-bold text-white px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-xl">
-            {currentDate}
-          </span>
-          <button
-            onClick={() => changeDay(1)}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="ml-2 px-4 py-2 rounded-xl bg-neon-lime text-black font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            Thêm Bữa
-          </button>
-        </div>
-      </div>
+      {/* Daily energy summary */}
+      <section aria-labelledby="day-total" className="space-y-5">
+        <SectionHead
+          title={<span id="day-total">Tổng năng lượng {relativeDayLabel(currentDate).toLowerCase()}</span>}
+          meta={
+            remaining >= 0
+              ? `Còn lại ${formatNumber(remaining)} kcal trên mục tiêu ${formatNumber(target)} kcal.`
+              : `Đã vượt ${formatNumber(Math.abs(remaining))} kcal so với mục tiêu ${formatNumber(target)} kcal.`
+          }
+        />
 
-      {/* Daily Macro Summary Banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="cyber-card p-4">
-          <span className="text-xs text-zinc-400 block mb-1">Tổng Calo Nạp</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-white">{dailyLog.calories_consumed}</span>
-            <span className="text-xs text-zinc-400">/ {dailyLog.calories_target} kcal</span>
-          </div>
-        </div>
-        <div className="cyber-card p-4">
-          <span className="text-xs text-zinc-400 block mb-1">Protein (Đạm)</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-neon-cyan">{dailyLog.macros?.protein_g || 0}g</span>
-            <span className="text-xs text-zinc-400">/ {profile.macros_target.protein_g}g</span>
-          </div>
-        </div>
-        <div className="cyber-card p-4">
-          <span className="text-xs text-zinc-400 block mb-1">Carbohydrates (Tinh bột)</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-neon-orange">{dailyLog.macros?.carbs_g || 0}g</span>
-            <span className="text-xs text-zinc-400">/ {profile.macros_target.carbs_g}g</span>
-          </div>
-        </div>
-        <div className="cyber-card p-4">
-          <span className="text-xs text-zinc-400 block mb-1">Fat (Chất béo)</span>
-          <div className="flex items-baseline gap-1">
-            <span className="font-mono text-2xl font-black text-zinc-300">{dailyLog.macros?.fat_g || 0}g</span>
-            <span className="text-xs text-zinc-400">/ {profile.macros_target.fat_g}g</span>
-          </div>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="p-4">
+            <p className="text-[12px] font-medium text-ink-faint">Tổng calo nạp</p>
+            <p className="mt-1.5 flex items-baseline gap-1.5">
+              <span className="font-metric text-heading-2 leading-none text-ink">
+                {formatNumber(consumed)}
+              </span>
+              <span className="font-metric text-[13px] text-ink-faint">/ {formatNumber(target)}</span>
+            </p>
+            <Meter
+              className="mt-3"
+              value={consumed}
+              max={target}
+              label="Calo nạp so với mục tiêu"
+              fillClassName={remaining < 0 ? 'bg-sticker-orange' : 'bg-primary'}
+            />
+            <p className="mt-2.5 text-[12px] text-ink-muted">kcal hôm nay</p>
+          </Card>
 
-      {/* Meals Detailed Breakdown */}
-      <div className="space-y-4">
+          {macroCards.map((m) => (
+            <Card key={m.label} className="p-4">
+              <p className="text-[12px] font-medium text-ink-faint">
+                {m.label} <span className="text-ink-faint">· {m.vietnamese}</span>
+              </p>
+              <p className="mt-1.5 flex items-baseline gap-1.5">
+                <span className={`font-metric text-heading-2 leading-none ${m.text}`}>
+                  {formatDecimal(m.consumed)}
+                </span>
+                <span className="font-metric text-[13px] text-ink-faint">/ {m.target} g</span>
+              </p>
+              <Meter
+                className="mt-3"
+                value={m.consumed}
+                max={m.target}
+                label={`${m.label} so với mục tiêu`}
+                fillClassName={m.fill}
+              />
+              <p className="mt-2.5 text-[12px] text-ink-muted">
+                {m.target - m.consumed > 0
+                  ? `Còn thiếu ${formatDecimal(m.target - m.consumed)} g`
+                  : 'Đã đạt mục tiêu'}
+              </p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Meals, one card per slot */}
+      <section aria-labelledby="meals-detail" className="space-y-5">
+        <SectionHead
+          title={<span id="meals-detail">Chi tiết bữa ăn</span>}
+          meta={`${dailyLog.meals?.length || 0} bữa đã ghi cho ngày ${currentDate}`}
+        />
+
         {dailyLog.meals && dailyLog.meals.length > 0 ? (
-          dailyLog.meals.map(meal => {
-            const mealCals = meal.items.reduce((s, i) => s + i.calories, 0);
-            const mealP = Math.round(meal.items.reduce((s, i) => s + i.protein_g, 0) * 10) / 10;
-            const mealC = Math.round(meal.items.reduce((s, i) => s + i.carbs_g, 0) * 10) / 10;
-            const mealF = Math.round(meal.items.reduce((s, i) => s + i.fat_g, 0) * 10) / 10;
-
-            return (
-              <div key={meal.id} className="cyber-card p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                  <div>
-                    <h2 className="font-bold text-white text-base">{meal.name}</h2>
-                    <span className="text-xs text-zinc-500 font-mono">Thời gian ghi nhận: {meal.time}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-mono text-base font-bold text-neon-lime">{mealCals} kcal</span>
-                    <p className="text-[11px] text-zinc-400 font-mono">
-                      {mealP}g P • {mealC}g C • {mealF}g F
-                    </p>
-                  </div>
-                </div>
-
-                <div className="divide-y divide-zinc-800/60">
-                  {meal.items.map((item, idx) => (
-                    <div key={idx} className="py-2.5 flex items-center justify-between text-xs">
-                      <div>
-                        <p className="font-medium text-zinc-200">{item.name}</p>
-                        <p className="text-zinc-500 text-[11px]">
-                          Khối lượng: {item.amount_g}g • Protein: {item.protein_g}g • Carbs: {item.carbs_g}g • Fat: {item.fat_g}g
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono font-bold text-white">{item.calories} kcal</span>
-                        <button
-                          onClick={() => handleDeleteItem(meal.id, idx)}
-                          className="text-zinc-600 hover:text-rose-400 p-1 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="py-16 text-center cyber-card">
-            <UtensilsCrossed className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-            <p className="text-sm text-zinc-400">Chưa có bữa ăn nào được ghi nhận cho ngày này.</p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="mt-4 px-4 py-2 rounded-xl bg-neon-lime text-black font-bold text-xs"
-            >
-              + Thêm món ngay
-            </button>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {dailyLog.meals.map((meal) => (
+              <MealCard
+                key={meal.id}
+                meal={meal}
+                deletingKey={deletingKey}
+                onDelete={(idx) => handleDeleteItem(meal.id, idx)}
+              />
+            ))}
           </div>
+        ) : (
+          <EmptyState
+            icon={<Utensils />}
+            title="Chưa có bữa ăn nào cho ngày này"
+            description='Nhập tên món kèm số gram, ví dụ "200g ức gà, 150g cơm", hệ thống tự bóc tách calo và macro.'
+            action={
+              <Button variant="primary" icon={<Plus />} onClick={() => setIsModalOpen(true)}>
+                Thêm bữa ăn
+              </Button>
+            }
+          />
         )}
-      </div>
+      </section>
 
       <QuickFoodModal
         isOpen={isModalOpen}
@@ -191,5 +231,108 @@ export default function FoodPage() {
         onSuccess={loadData}
       />
     </div>
+  );
+}
+
+function MealCard({
+  meal,
+  deletingKey,
+  onDelete,
+}: {
+  meal: Meal;
+  deletingKey: string | null;
+  onDelete: (idx: number) => void;
+}) {
+  const Icon = MEAL_ICON[meal.name] ?? Utensils;
+  const tone = MEAL_TONE[meal.name] ?? 'neutral';
+  const calories = meal.items.reduce((s, i) => s + i.calories, 0);
+  const protein = meal.items.reduce((s, i) => s + i.protein_g, 0);
+  const carbs = meal.items.reduce((s, i) => s + i.carbs_g, 0);
+  const fat = meal.items.reduce((s, i) => s + i.fat_g, 0);
+
+  return (
+    <Card className="flex flex-col">
+      <div className="flex items-start justify-between gap-3 border-b border-hairline px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className={`flex h-8 w-8 flex-shrink-0 items-center justify-center r-card text-white ${
+              tone === 'orange'
+                ? 'bg-sticker-orange'
+                : tone === 'sky'
+                  ? 'bg-sticker-sky'
+                  : tone === 'purple'
+                    ? 'bg-sticker-purple'
+                    : tone === 'teal'
+                      ? 'bg-sticker-teal'
+                      : 'bg-hairline'
+            }`}
+          >
+            <Icon className="h-4 w-4" strokeWidth={1.75} />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-semibold text-ink">{meal.name}</p>
+            <p className="font-metric text-[12px] text-ink-faint">
+              {meal.time} · {meal.items.length} món
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 text-right">
+          <p className="font-metric text-[15px] font-semibold text-ink">
+            {formatNumber(calories)} kcal
+          </p>
+          <p className="font-metric text-[11px] text-ink-faint">
+            {formatDecimal(protein)}P · {formatDecimal(carbs)}C · {formatDecimal(fat)}F
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="db-table min-w-[560px]">
+          <thead>
+            <tr>
+              <th>Thực phẩm</th>
+              <th className="text-right">Khối lượng</th>
+              <th className="text-right">Calo</th>
+              <th className="text-right">P</th>
+              <th className="text-right">C</th>
+              <th className="text-right">F</th>
+              <th className="w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {meal.items.map((item, idx) => (
+              <tr key={`${meal.id}-${idx}`}>
+                <td className="text-ink">{item.name}</td>
+                <td className="text-right font-metric text-ink-muted">{item.amount_g}g</td>
+                <td className="text-right font-metric font-semibold">
+                  {formatNumber(item.calories)}
+                </td>
+                <td className="text-right font-metric text-sticker-teal">
+                  {formatDecimal(item.protein_g)}
+                </td>
+                <td className="text-right font-metric text-sticker-orange-deep">
+                  {formatDecimal(item.carbs_g)}
+                </td>
+                <td className="text-right font-metric text-sticker-brown">
+                  {formatDecimal(item.fat_g)}
+                </td>
+                <td className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => onDelete(idx)}
+                    disabled={deletingKey === `${meal.id}-${idx}`}
+                    aria-label={`Xóa ${item.name}`}
+                    className="row-action inline-flex h-7 w-7 items-center justify-center r-row text-ink-faint transition-colors hover:bg-canvas hover:text-bad disabled:opacity-40"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
