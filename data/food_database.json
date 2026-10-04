@@ -1,0 +1,122 @@
+[
+  {
+    "id": "uc_ga",
+    "name": "Ức gà",
+    "aliases": ["ức gà", "uc ga", "thịt gà", "chicken breast"],
+    "per_100g": { "calories": 165, "protein_g": 31.0, "carbs_g": 0.0, "fat_g": 3.6 }
+  },
+  {
+    "id": "thit_bo_nac",
+    "name": "Thịt bò thăn nạc",
+    "aliases": ["thịt bò", "bò nạc", "thăn bò", "beef", "beef steak"],
+    "per_100g": { "calories": 210, "protein_g": 26.0, "carbs_g": 0.0, "fat_g": 11.0 }
+  },
+  {
+    "id": "trung_ga",
+    "name": "Trứng gà (1 quả ~55g)",
+    "aliases": ["trứng", "trứng gà", "trung ga", "egg"],
+    "per_100g": { "calories": 155, "protein_g": 13.0, "carbs_g": 1.1, "fat_g": 11.0 }
+  },
+  {
+    "id": "long_trang_trung",
+    "name": "Lòng trắng trứng gà",
+    "aliases": ["lòng trắng", "long trang trung", "egg white"],
+    "per_100g": { "calories": 52, "protein_g": 11.0, "carbs_g": 0.7, "fat_g": 0.2 }
+  },
+  {
+    "id": "com_trang",
+    "name": "Cơm trắng nấu chín",
+    "aliases": ["cơm", "cơm trắng", "com trang", "rice", "white rice"],
+    "per_100g": { "calories": 130, "protein_g": 2.7, "carbs_g": 28.2, "fat_g": 0.3 }
+  },
+  {
+    "id": "com_gao_lut",
+    "name": "Cơm gạo lứt nấu chín",
+    "aliases": ["gạo lứt", "cơm gạo lứt", "gao lut", "brown rice"],
+    "per_100g": { "calories": 111, "protein_g": 2.6, "carbs_g": 23.0, "fat_g": 0.9 }
+  },
+  {
+    "id": "khoai_lang",
+    "name": "Khoai lang luộc / hấp",
+    "aliases": ["khoai lang", "khoai lang luộc", "sweet potato"],
+    "per_100g": { "calories": 86, "protein_g": 1.6, "carbs_g": 20.1, "fat_g": 0.1 }
+  },
+  {
+    "id": "khoai_tay",
+    "name": "Khoai tây luộc",
+    "aliases": ["khoai tây", "khoai tay", "potato"],
+    "per_100g": { "calories": 87, "protein_g": 2.0, "carbs_g": 20.0, "fat_g": 0.1 }
+  },
+  {
+    "id": "banh_mi_den",
+    "name": "Bánh mì đen ngũ cốc",
+    "aliases": ["bánh mì đen", "banh mi den", "rye bread", "whole wheat bread"],
+    "per_100g": { "calories": 259, "protein_g": 8.5, "carbs_g": 48.0, "fat_g": 3.3 }
+  },
+  {
+    "id": "yen_mach",
+    "name": "Yến mạch cán dẹt",
+    "aliases": ["yến mạch", "yen mach", "oats", "oatmeal"],
+    "per_100g": { "calories": 389, "protein_g": 16.9, "carbs_g": 66.3, "fat_g": 6.9 }
+  },
+  {
+    "id": "whey_protein",
+    "name": "Whey Protein Isolate",
+    "aliases": ["whey", "whey protein", "bột protein"],
+    "per_100g": { "calories": 400, "protein_g": 83.3, "carbs_g": 5.0, "fat_g": 3.3 }
+  },
+  {
+    "id": "ca_hoi",
+    "name": "Cá hồi phi lê",
+    "aliases": ["cá hồi", "ca hoi", "salmon"],
+    "per_100g": { "calories": 208, "protein_g": 20.0, "carbs_g": 0.0, "fat_g": 13.0 }
+  },
+  {
+    "id": "ca_basa",
+    "name": "Cá basa phi lê",
+    "aliases": ["cá basa", "ca basa", "basa"],
+    "per_100g": { "calories": 125, "protein_g": 17.5, "carbs_g": 0.0, "fat_g": 6.0 }
+  },
+  {
+    "id": "tom_su",
+    "name": "Tôm sú hấp",
+    "aliases": ["tôm", "tom", "shrimp", "prawn"],
+    "per_100g": { "calories": 99, "protein_g": 21.0, "carbs_g": 0.2, "fat_g": 1.0 }
+  },
+  {
+    "id": "dau_hu",
+    "name": "Đậu hũ trắng (Đậu phụ)",
+    "aliases": ["đậu hũ", "dau hu", "đậu phụ", "tofu"],
+    "per_100g": { "calories": 76, "protein_g": 8.0, "carbs_g": 1.9, "fat_g": 4.8 }
+  },
+  {
+    "id": "sua_chua_hy_lap",
+    "name": "Sữa chua Hy Lạp không đường",
+    "aliases": ["sữa chua hy lạp", "greek yogurt"],
+    "per_100g": { "calories": 85, "protein_g": 10.0, "carbs_g": 4.0, "fat_g": 2.5 }
+  },
+  {
+    "id": "chuoi",
+    "name": "Chuối tiêu",
+    "aliases": ["chuối", "chuoi", "banana"],
+    "per_100g": { "calories": 89, "protein_g": 1.1, "carbs_g": 22.8, "fat_g": 0.3 }
+  },
+  {
+    "id": "tao",
+    "name": "Táo",
+    "aliases": ["táo", "tao", "apple"],
+    "per_100g": { "calories": 52, "protein_g": 0.3, "carbs_g": 13.8, "fat_g": 0.2 }
+  },
+  {
+    "id": "pho_bo",
+    "name": "Phở bò (1 tô ~450g)",
+    "aliases": ["phở bò", "pho bo", "beef pho"],
+    "per_100g": { "calories": 107, "protein_g": 7.1, "carbs_g": 11.5, "fat_g": 3.5 }
+  },
+  {
+    "id": "bun_cha",
+    "name": "Bún chả nạc nướng",
+    "aliases": ["bún chả", "bun cha"],
+    "per_100g": { "calories": 128, "protein_g": 8.5, "carbs_g": 14.5, "fat_g": 3.5 }
+  }
+]

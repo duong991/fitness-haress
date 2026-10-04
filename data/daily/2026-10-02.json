@@ -1,0 +1,222 @@
+{
+  "date": "2026-10-02",
+  "weight_kg": 71.8,
+  "calories_consumed": 1950,
+  "macros": {
+    "protein_g": 168,
+    "carbs_g": 192,
+    "fat_g": 53
+  },
+  "meals": [
+    {
+      "id": "m1",
+      "name": "Bữa sáng",
+      "time": "07:30",
+      "items": [
+        {
+          "name": "Bánh mì sandwich đen kẹp trứng & jambon nạc",
+          "amount_g": 180,
+          "calories": 390,
+          "protein_g": 24,
+          "carbs_g": 44,
+          "fat_g": 12
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "name": "Bữa trưa",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Cơm trắng",
+          "amount_g": 150,
+          "calories": 195,
+          "protein_g": 4,
+          "carbs_g": 42,
+          "fat_g": 0.5
+        },
+        {
+          "name": "Ức gà áp chảo sốt tiêu",
+          "amount_g": 200,
+          "calories": 340,
+          "protein_g": 62,
+          "carbs_g": 2,
+          "fat_g": 8
+        },
+        {
+          "name": "Rau cải thìa luộc",
+          "amount_g": 150,
+          "calories": 45,
+          "protein_g": 2.5,
+          "carbs_g": 7,
+          "fat_g": 0.3
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "name": "Bữa xế",
+      "time": "16:15",
+      "items": [
+        {
+          "name": "Whey Protein",
+          "amount_g": 30,
+          "calories": 120,
+          "protein_g": 25,
+          "carbs_g": 1.5,
+          "fat_g": 1
+        },
+        {
+          "name": "Chuối",
+          "amount_g": 100,
+          "calories": 90,
+          "protein_g": 1.1,
+          "carbs_g": 23,
+          "fat_g": 0.3
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "name": "Bữa tối",
+      "time": "20:00",
+      "items": [
+        {
+          "name": "Bún tươi",
+          "amount_g": 150,
+          "calories": 165,
+          "protein_g": 3,
+          "carbs_g": 36,
+          "fat_g": 0.4
+        },
+        {
+          "name": "Thăn bò áp chảo",
+          "amount_g": 180,
+          "calories": 380,
+          "protein_g": 45,
+          "carbs_g": 0,
+          "fat_g": 20
+        },
+        {
+          "name": "Canh bí đỏ thịt băm",
+          "amount_g": 200,
+          "calories": 95,
+          "protein_g": 6,
+          "carbs_g": 8,
+          "fat_g": 3
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": true,
+    "session_name": "Upper B (Lưng, Vai sau, Tay trước)",
+    "duration_minutes": 60,
+    "total_volume_kg": 8100,
+    "exercises": [
+      {
+        "exercise_id": "lat_pulldown",
+        "exercise_name": "Lat Pulldown",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 55,
+            "reps": 12,
+            "rpe": 7.5,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 60,
+            "reps": 10,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 65,
+            "reps": 10,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "barbell_row",
+        "exercise_name": "Barbell Bent-Over Row",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 60,
+            "reps": 10,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 65,
+            "reps": 8,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 70,
+            "reps": 8,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "dumbbell_lateral_raise",
+        "exercise_name": "Dumbbell Lateral Raise",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 10,
+            "reps": 15,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 12,
+            "reps": 12,
+            "rpe": 9,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 12,
+            "reps": 12,
+            "rpe": 9.5,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "barbell_bicep_curl",
+        "exercise_name": "Barbell Bicep Curl",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 25,
+            "reps": 12,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 30,
+            "reps": 10,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      }
+    ]
+  },
+  "notes": "Lat pulldown kiểm soát eccentric 3 giây, cơ xô căng kích thích rất tốt."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Học viên Gym",
+  "age": 26,
+  "gender": "male",
+  "height_cm": 175,
+  "starting_weight_kg": 73.0,
+  "current_weight_kg": 71.6,
+  "goal_type": "cut",
+  "target_weight_kg": 68.0,
+  "weekly_target_rate_kg": -0.4,
+  "initial_bmr": 1720,
+  "current_tdee": 2420,
+  "target_calories": 1950,
+  "macros_target": {
+    "protein_g": 165,
+    "carbs_g": 195,
+    "fat_g": 55
+  },
+  "training_days_per_week": 4,
+  "split_name": "Upper / Lower (4 buổi)",
+  "updated_at": "2026-10-04"
+}

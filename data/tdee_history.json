@@ -1,0 +1,22 @@
+[
+  {
+    "week_start": "2026-09-21",
+    "week_end": "2026-09-27",
+    "avg_weight_kg": 72.4,
+    "weight_change_kg": -0.35,
+    "avg_calories_in": 1980,
+    "calculated_tdee": 2365,
+    "recommended_target_calories": 1950,
+    "notes": "Tuần 1 cắt mỡ: TDEE ổn định, thâm hụt khoảng 385 kcal/ngày."
+  },
+  {
+    "week_start": "2026-09-28",
+    "week_end": "2026-10-04",
+    "avg_weight_kg": 71.9,
+    "weight_change_kg": -0.5,
+    "avg_calories_in": 1930,
+    "calculated_tdee": 2480,
+    "recommended_target_calories": 1950,
+    "notes": "Tuần 2: Giảm đúng tiến độ (0.5kg/tuần ~ 0.7% trọng lượng cơ thể). TDEE tăng nhẹ do tăng bước chân hàng ngày. Giữ nguyên 1950 kcal."
+  }
+]

@@ -1,0 +1,245 @@
+{
+  "date": "2026-09-29",
+  "weight_kg": 72.1,
+  "calories_consumed": 1960,
+  "macros": {
+    "protein_g": 170,
+    "carbs_g": 200,
+    "fat_g": 52
+  },
+  "meals": [
+    {
+      "id": "m1",
+      "name": "Bữa sáng",
+      "time": "07:30",
+      "items": [
+        {
+          "name": "Trứng ốp la (2 quả)",
+          "amount_g": 110,
+          "calories": 180,
+          "protein_g": 14,
+          "carbs_g": 1,
+          "fat_g": 13
+        },
+        {
+          "name": "Bánh mì đen ngũ cốc",
+          "amount_g": 70,
+          "calories": 180,
+          "protein_g": 6.5,
+          "carbs_g": 33,
+          "fat_g": 2
+        },
+        {
+          "name": "Cà phê đen không đường",
+          "amount_g": 150,
+          "calories": 5,
+          "protein_g": 0.3,
+          "carbs_g": 0.5,
+          "fat_g": 0
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "name": "Bữa trưa",
+      "time": "12:15",
+      "items": [
+        {
+          "name": "Cơm gạo lứt",
+          "amount_g": 180,
+          "calories": 216,
+          "protein_g": 5,
+          "carbs_g": 45,
+          "fat_g": 1.6
+        },
+        {
+          "name": "Cá hồi nướng",
+          "amount_g": 180,
+          "calories": 375,
+          "protein_g": 36,
+          "carbs_g": 0,
+          "fat_g": 24
+        },
+        {
+          "name": "Bông cải xanh luộc",
+          "amount_g": 150,
+          "calories": 55,
+          "protein_g": 4,
+          "carbs_g": 10,
+          "fat_g": 0.6
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "name": "Bữa phụ chiều",
+      "time": "16:00",
+      "items": [
+        {
+          "name": "Sữa chua Hy Lạp",
+          "amount_g": 150,
+          "calories": 130,
+          "protein_g": 15,
+          "carbs_g": 6,
+          "fat_g": 3
+        },
+        {
+          "name": "Hạnh nhân",
+          "amount_g": 20,
+          "calories": 116,
+          "protein_g": 4.2,
+          "carbs_g": 4.3,
+          "fat_g": 10
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "name": "Bữa tối",
+      "time": "19:45",
+      "items": [
+        {
+          "name": "Bún gạo lứt",
+          "amount_g": 120,
+          "calories": 150,
+          "protein_g": 3.5,
+          "carbs_g": 32,
+          "fat_g": 0.5
+        },
+        {
+          "name": "Ức gà xé xào nấm",
+          "amount_g": 220,
+          "calories": 360,
+          "protein_g": 65,
+          "carbs_g": 6,
+          "fat_g": 8
+        },
+        {
+          "name": "Salad xà lách dầu giấm nhẹ",
+          "amount_g": 150,
+          "calories": 95,
+          "protein_g": 1.5,
+          "carbs_g": 5,
+          "fat_g": 8
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": true,
+    "session_name": "Upper A (Ngực, Vai, Tay sau)",
+    "duration_minutes": 65,
+    "total_volume_kg": 8450,
+    "exercises": [
+      {
+        "exercise_id": "bench_press",
+        "exercise_name": "Barbell Bench Press",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 75,
+            "reps": 8,
+            "rpe": 7.5,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 80,
+            "reps": 6,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 85,
+            "reps": 5,
+            "rpe": 9.5,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "incline_dumbbell_press",
+        "exercise_name": "Incline Dumbbell Press",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 24,
+            "reps": 10,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 26,
+            "reps": 8,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 26,
+            "reps": 8,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "overhead_press",
+        "exercise_name": "Standing Overhead Press (OHP)",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 42.5,
+            "reps": 8,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 45,
+            "reps": 7,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 47.5,
+            "reps": 6,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "cable_tricep_pushdown",
+        "exercise_name": "Cable Tricep Pushdown",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 30,
+            "reps": 12,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 35,
+            "reps": 12,
+            "rpe": 9,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 35,
+            "reps": 10,
+            "rpe": 9.5,
+            "completed": true
+          }
+        ]
+      }
+    ]
+  },
+  "notes": "Bench press lên tạ mượt, giữ form chuẩn không nhấc mông."
+}

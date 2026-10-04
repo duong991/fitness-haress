@@ -1,0 +1,187 @@
+{
+  "date": "2026-09-30",
+  "weight_kg": 72,
+  "calories_consumed": 1940,
+  "macros": {
+    "protein_g": 165,
+    "carbs_g": 195,
+    "fat_g": 50
+  },
+  "meals": [
+    {
+      "id": "m1",
+      "name": "Bữa sáng",
+      "time": "07:30",
+      "items": [
+        {
+          "name": "Yến mạch ngâm sữa chua hạt chia",
+          "amount_g": 220,
+          "calories": 350,
+          "protein_g": 18,
+          "carbs_g": 52,
+          "fat_g": 7
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "name": "Bữa trưa",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Cơm trắng",
+          "amount_g": 160,
+          "calories": 208,
+          "protein_g": 4.2,
+          "carbs_g": 45,
+          "fat_g": 0.5
+        },
+        {
+          "name": "Bò bít tết thăn lưng",
+          "amount_g": 200,
+          "calories": 420,
+          "protein_g": 50,
+          "carbs_g": 0,
+          "fat_g": 22
+        },
+        {
+          "name": "Măng tây áp chảo",
+          "amount_g": 120,
+          "calories": 45,
+          "protein_g": 3,
+          "carbs_g": 5,
+          "fat_g": 2
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "name": "Bữa xế",
+      "time": "16:30",
+      "items": [
+        {
+          "name": "Whey Protein + 1 quả chuối",
+          "amount_g": 150,
+          "calories": 225,
+          "protein_g": 26,
+          "carbs_g": 28,
+          "fat_g": 1.5
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "name": "Bữa tối",
+      "time": "20:00",
+      "items": [
+        {
+          "name": "Khoai tây luộc",
+          "amount_g": 200,
+          "calories": 174,
+          "protein_g": 4,
+          "carbs_g": 40,
+          "fat_g": 0.2
+        },
+        {
+          "name": "Ức gà nướng thảo mộc",
+          "amount_g": 220,
+          "calories": 360,
+          "protein_g": 66,
+          "carbs_g": 0,
+          "fat_g": 8
+        },
+        {
+          "name": "Canh bí xanh tôm khô",
+          "amount_g": 200,
+          "calories": 65,
+          "protein_g": 5,
+          "carbs_g": 6,
+          "fat_g": 0.5
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": true,
+    "session_name": "Lower A (Chân Đùi trước & Đùi sau)",
+    "duration_minutes": 70,
+    "total_volume_kg": 9200,
+    "exercises": [
+      {
+        "exercise_id": "barbell_squat",
+        "exercise_name": "Barbell Back Squat",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 90,
+            "reps": 8,
+            "rpe": 7.5,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 100,
+            "reps": 6,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 110,
+            "reps": 5,
+            "rpe": 9.5,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "romanian_deadlift",
+        "exercise_name": "Romanian Deadlift (RDL)",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 80,
+            "reps": 10,
+            "rpe": 7.5,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 90,
+            "reps": 8,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 100,
+            "reps": 8,
+            "rpe": 8.5,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "leg_press",
+        "exercise_name": "Leg Press 45°",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 160,
+            "reps": 12,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 180,
+            "reps": 10,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      }
+    ]
+  },
+  "notes": "Squat đạt 110kg x 5 reps chuẩn depth. Đùi sau cảm nhận cực tốt với RDL."
+}

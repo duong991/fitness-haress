@@ -1,0 +1,216 @@
+{
+  "date": "2026-10-04",
+  "weight_kg": 71.6,
+  "calories_consumed": 1920,
+  "macros": {
+    "protein_g": 168,
+    "carbs_g": 185,
+    "fat_g": 52
+  },
+  "meals": [
+    {
+      "id": "m1",
+      "name": "Bữa sáng",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Trứng gà luộc (2 quả)",
+          "amount_g": 110,
+          "calories": 170,
+          "protein_g": 14,
+          "carbs_g": 1,
+          "fat_g": 12
+        },
+        {
+          "name": "Bánh mì đen ngũ cốc",
+          "amount_g": 80,
+          "calories": 208,
+          "protein_g": 7.2,
+          "carbs_g": 38.4,
+          "fat_g": 2.6
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "name": "Bữa trưa",
+      "time": "12:30",
+      "items": [
+        {
+          "name": "Cơm trắng",
+          "amount_g": 150,
+          "calories": 195,
+          "protein_g": 4,
+          "carbs_g": 42,
+          "fat_g": 0.5
+        },
+        {
+          "name": "Ức gà nướng tiêu chanh",
+          "amount_g": 220,
+          "calories": 360,
+          "protein_g": 66,
+          "carbs_g": 1,
+          "fat_g": 8
+        },
+        {
+          "name": "Canh bí đỏ thịt bằm",
+          "amount_g": 200,
+          "calories": 95,
+          "protein_g": 6,
+          "carbs_g": 8,
+          "fat_g": 3
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "name": "Bữa phụ chiều",
+      "time": "16:30",
+      "items": [
+        {
+          "name": "Whey Protein",
+          "amount_g": 30,
+          "calories": 120,
+          "protein_g": 25,
+          "carbs_g": 1.5,
+          "fat_g": 1
+        },
+        {
+          "name": "Táo xanh",
+          "amount_g": 150,
+          "calories": 80,
+          "protein_g": 0.4,
+          "carbs_g": 20,
+          "fat_g": 0.2
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "name": "Bữa tối",
+      "time": "19:30",
+      "items": [
+        {
+          "name": "Khoai lang mật nướng",
+          "amount_g": 160,
+          "calories": 140,
+          "protein_g": 2.5,
+          "carbs_g": 32,
+          "fat_g": 0.2
+        },
+        {
+          "name": "Thăn bò áp chảo thảo mộc",
+          "amount_g": 200,
+          "calories": 430,
+          "protein_g": 46,
+          "carbs_g": 0,
+          "fat_g": 24
+        },
+        {
+          "name": "Salad rau củ sốt mè rang ít béo",
+          "amount_g": 150,
+          "calories": 122,
+          "protein_g": 2.9,
+          "carbs_g": 11,
+          "fat_g": 5.5
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": true,
+    "session_name": "Upper A (Push Focus)",
+    "duration_minutes": 65,
+    "total_volume_kg": 8750,
+    "exercises": [
+      {
+        "exercise_id": "bench_press",
+        "exercise_name": "Barbell Bench Press",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 75,
+            "reps": 8,
+            "rpe": 7.5,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 80,
+            "reps": 6,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 3,
+            "weight_kg": 85,
+            "reps": 5,
+            "rpe": 9.5,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "incline_dumbbell_press",
+        "exercise_name": "Incline Dumbbell Press",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 26,
+            "reps": 8,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 26,
+            "reps": 8,
+            "rpe": 8.5,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "overhead_press",
+        "exercise_name": "Standing Overhead Press (OHP)",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 45,
+            "reps": 7,
+            "rpe": 8,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 47.5,
+            "reps": 6,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      },
+      {
+        "exercise_id": "cable_tricep_pushdown",
+        "exercise_name": "Cable Tricep Pushdown",
+        "sets": [
+          {
+            "set_number": 1,
+            "weight_kg": 35,
+            "reps": 12,
+            "rpe": 8.5,
+            "completed": true
+          },
+          {
+            "set_number": 2,
+            "weight_kg": 35,
+            "reps": 12,
+            "rpe": 9,
+            "completed": true
+          }
+        ]
+      }
+    ]
+  },
+  "notes": "Hoàn thành buổi tập đầu tháng 10. Thể lực sung mãn, cân nặng về 71.6kg (-1.4kg tổng từ vạch xuất phát)."
+}
