@@ -176,7 +176,7 @@ export function resolveSplit(profile: Profile): SplitConfig {
  * Derived from the REST days rather than the training days: `floor(i * 7 / r)`
  * always yields exactly `r` distinct slots, so a 6-session week really gets one
  * rest day instead of collapsing, and 3/4-session weeks come out alternating.
- *   3/week -> Mon, Wed, Fri      4/week -> Sun, Tue, Thu, Sat
+ *   3/week -> Tue, Thu, Sat      4/week -> Mon, Wed, Fri, Sat
  */
 export function trainingDaysOfWeek(perWeek: number): Set<number> {
   const n = Math.min(Math.max(Math.round(perWeek) || 0, 0), MAX_TRAINING_DAYS);
