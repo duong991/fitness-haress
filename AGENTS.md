@@ -10,6 +10,7 @@ Sử dụng `.agents/skills/coach/SKILL.md` cho mọi tương tác với ngườ
 - `data/daily/YYYY-MM-DD.json` — nhật ký chi tiết từng ngày (bữa ăn, macros, bài tập gym, cân nặng, ghi chú)
 - `data/exercises.json` — danh mục bài tập, nhóm cơ, kỷ lục cá nhân (PRs)
 - `data/tdee_history.json` — lịch sử tính toán TDEE thích ứng và đề xuất calo tuần
+- `data/habits.json` — danh sách habit và chuỗi ngày check-in `/coach` (streak từng habit tính từ `habits_done` trong nhật ký ngày, qua `scripts/habits.mjs`)
 - `data/food_database.json` — bảng tra cứu dinh dưỡng chuẩn theo 100g cho thực phẩm phổ biến
 
 ## Non-negotiable Rules

@@ -595,6 +595,22 @@ function rankExercises(list: Exercise[]): Exercise[] {
   return [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
 }
 
+/**
+ * Gear the user can actually use. Gym users can use everything; home users only
+ * exercises whose every required item is in `profile.equipment`, plus bodyweight.
+ */
+export function availableExercises(pool: Exercise[], profile: Profile): Exercise[] {
+  if (profile.training_location !== 'home') return pool;
+  const owned = new Set(['bodyweight', ...(profile.equipment ?? [])]);
+  return pool.filter((e) => e.equipment?.length && e.equipment.every((g) => owned.has(g)));
+}
+
+/** True when the movement is loaded by body mass (no external weight to prescribe). */
+function isBodyweightMove(exercise: Exercise): boolean {
+  const gear = exercise.equipment ?? [];
+  return gear.length > 0 && gear.every((g) => ['bodyweight', 'pullup_bar', 'step_or_chair'].includes(g));
+}
+
 function chooseExercises(pool: Exercise[], day: SplitDay): Exercise[] {
   const primary = pool.filter((e) => matchesMuscle(e.target_muscle, day.muscles));
   const chosen = rankExercises(primary).slice(0, MAX_EXERCISES_PER_SESSION);
@@ -691,14 +707,19 @@ export function buildWorkoutRecommendation({
   const bw = profile.current_weight_kg;
 
   let loggedToday = false;
-  const items: WorkoutSuggestionItem[] = chooseExercises(exercises, day).map((exercise, i) => {
-    const scheme = schemeForIndex(rotation.index + i);
+  const items: WorkoutSuggestionItem[] = chooseExercises(availableExercises(exercises, profile), day).map((exercise, i) => {
+    const baseScheme = schemeForIndex(rotation.index + i);
+    const bodyweightMove = isBodyweightMove(exercise);
+    // Bodyweight work is progressed by reps, so never prescribe a strength-range count.
+    const scheme = bodyweightMove ? { ...baseScheme, reps: Math.max(baseScheme.reps, 10) } : baseScheme;
     const hasPr = Boolean(exercise.personal_record?.weight_kg);
 
     // Without a PR, apply the intensity to the working ratio directly: treating a
     // bodyweight guess as a true 1RM makes the first session far too heavy.
     let topWeight: number;
-    if (hasPr) {
+    if (bodyweightMove && !hasPr) {
+      topWeight = 0;
+    } else if (hasPr) {
       const oneRm = exercise.personal_record!.weight_kg * (1 + exercise.personal_record!.reps / 30);
       topWeight = Math.max(2.5, roundLoad(oneRm * scheme.pct));
     } else {
@@ -727,7 +748,9 @@ export function buildWorkoutRecommendation({
     }
 
     let progression: string;
-    if (lastWeight !== undefined) {
+    if (bodyweightMove && !hasPr && (lastWeight === undefined || lastWeight === 0)) {
+      progression = `Bài dùng trọng lượng cơ thể: làm ${scheme.sets} set gần ${scheme.reps} reps ở RPE 7-8. Chạm ${scheme.reps + 5} reps sạch ở mọi set thì chuyển biến thể khó hơn, chậm tempo xuống (3 giây) hoặc thêm tạ (balo, tạ tay).`;
+    } else if (lastWeight !== undefined) {
       // A logged session is the strongest signal: compare against it directly.
       if (lastWeight < topWeight) {
         progression = `Buổi trước đỉnh ${lastWeight} kg. Hôm nay lên ${topWeight} kg × ${scheme.reps} reps.`;

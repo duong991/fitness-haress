@@ -26,6 +26,10 @@ export interface Profile {
   macros_target: MacroTarget;
   training_days_per_week: number;
   split_name?: string;
+  /** Where the user trains. Absent means gym (everything in the library is eligible). */
+  training_location?: 'gym' | 'home';
+  /** Gear available when training_location is 'home'. 'bodyweight' is always implied. */
+  equipment?: string[];
   /** Derived mirror of `isProfileReady` — false until real data is collected. */
   onboarded?: boolean;
   updated_at: string;
@@ -119,6 +123,10 @@ export interface Exercise {
   name: string;
   target_muscle: string;
   category: string;
+  /** Optional curated how-to page; the UI falls back to a video search. */
+  guide_url?: string;
+  /** Gear this exercise needs; 'bodyweight' means none. Untagged exercises are gym-only. */
+  equipment?: string[];
   personal_record?: {
     weight_kg: number;
     reps: number;
