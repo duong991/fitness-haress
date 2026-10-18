@@ -11,6 +11,8 @@ import {
 import { Profile, TdeeHistoryEntry } from '@/lib/data';
 import { formatDecimal, formatNumber } from '@/lib/format';
 import Button from '@/components/ui/Button';
+import LoadError from '@/components/ui/LoadError';
+import { getJson } from '@/lib/fetchJson';
 import { Card, EmptyState, SectionHead, SkeletonRows } from '@/components/ui/Card';
 import { PageHeader, StatBlock } from '@/components/ui/PageHeader';
 
@@ -20,17 +22,17 @@ export default function TdeePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ tdee: number; target: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const loadData = useCallback(() => {
-    fetch('/api/tdee')
-      .then((res) => res.json())
+    setLoadError(false);
+    getJson<TdeeHistoryEntry[]>('/api/tdee')
       .then(setHistory)
       .catch(() => setHistory([]));
 
-    fetch('/api/profile')
-      .then((res) => res.json())
+    getJson<Profile>('/api/profile')
       .then(setProfile)
-      .catch(() => setProfile(null));
+      .catch(() => setLoadError(true));
   }, []);
 
   useEffect(() => {
@@ -82,6 +84,15 @@ export default function TdeePage() {
       }
     />
   );
+
+  if (!profile && loadError) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <LoadError onRetry={loadData} />
+      </div>
+    );
+  }
 
   if (!profile) {
     return (

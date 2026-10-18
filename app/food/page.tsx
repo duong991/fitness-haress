@@ -6,6 +6,8 @@ import { DailyLog, Meal, Profile } from '@/lib/data';
 import { formatDecimal, formatNumber, relativeDayLabel, TODAY } from '@/lib/format';
 import QuickFoodModal from '@/components/QuickFoodModal';
 import Button from '@/components/ui/Button';
+import LoadError from '@/components/ui/LoadError';
+import { getJson } from '@/lib/fetchJson';
 import { Card, EmptyState, Meter, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
 import { DateSwitcher, PageHeader } from '@/components/ui/PageHeader';
 import {
@@ -37,21 +39,21 @@ export default function FoodPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   /* The suggested budget comes from the server-side engine so this page and the
      dashboard can never disagree about how much is left to eat. */
   const { data: recommendation } = useRecommendation(currentDate);
 
   const loadData = useCallback(() => {
-    fetch(`/api/daily/${currentDate}`)
-      .then((res) => res.json())
+    setLoadError(false);
+    getJson<DailyLog>(`/api/daily/${currentDate}`)
       .then(setDailyLog)
-      .catch(() => setDailyLog(null));
+      .catch(() => setLoadError(true));
 
-    fetch('/api/profile')
-      .then((res) => res.json())
+    getJson<Profile>('/api/profile')
       .then(setProfile)
-      .catch(() => setProfile(null));
+      .catch(() => setLoadError(true));
   }, [currentDate]);
 
   useEffect(() => {
@@ -98,6 +100,15 @@ export default function FoodPage() {
       }
     />
   );
+
+  if (loadError && (!dailyLog || !profile)) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <LoadError onRetry={loadData} />
+      </div>
+    );
+  }
 
   if (!dailyLog || !profile) {
     return (

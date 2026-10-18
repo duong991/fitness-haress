@@ -6,6 +6,8 @@ import { DailyLog, Exercise } from '@/lib/data';
 import { formatDecimal, formatNumber, relativeDayLabel, TODAY } from '@/lib/format';
 import QuickWorkoutModal from '@/components/QuickWorkoutModal';
 import Button from '@/components/ui/Button';
+import LoadError from '@/components/ui/LoadError';
+import { getJson } from '@/lib/fetchJson';
 import { Card, EmptyState, Pill, SectionHead, SkeletonRows } from '@/components/ui/Card';
 import { DateSwitcher, PageHeader, StatBlock } from '@/components/ui/PageHeader';
 
@@ -15,15 +17,15 @@ export default function WorkoutPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const loadData = useCallback(() => {
-    fetch(`/api/daily/${currentDate}`)
-      .then((res) => res.json())
+    setLoadError(false);
+    getJson<DailyLog>(`/api/daily/${currentDate}`)
       .then(setDailyLog)
-      .catch(() => setDailyLog(null));
+      .catch(() => setLoadError(true));
 
-    fetch('/api/exercises')
-      .then((res) => res.json())
+    getJson<Exercise[]>('/api/exercises')
       .then(setExercises)
       .catch(() => setExercises([]));
   }, [currentDate]);
@@ -73,6 +75,15 @@ export default function WorkoutPage() {
       }
     />
   );
+
+  if (!dailyLog && loadError) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <LoadError onRetry={loadData} />
+      </div>
+    );
+  }
 
   if (!dailyLog) {
     return (

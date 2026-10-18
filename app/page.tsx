@@ -31,6 +31,8 @@ import TodayPlanCard from '@/components/TodayPlanCard';
 import StepsCard from '@/components/StepsCard';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import LoadError from '@/components/ui/LoadError';
+import { getJson } from '@/lib/fetchJson';
 import { Card, EmptyState, Meter, Pill, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/Field';
 import { DateSwitcher, PageHeader } from '@/components/ui/PageHeader';
@@ -42,6 +44,7 @@ export default function DashboardPage() {
   const [dailyLog, setDailyLog] = useState<DailyLog | null>(null);
   const [allLogs, setAllLogs] = useState<DailyLog[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
@@ -56,23 +59,21 @@ export default function DashboardPage() {
   } = useRecommendation(currentDate);
 
   const loadData = useCallback(() => {
-    fetch(`/api/daily/${currentDate}`)
-      .then((res) => res.json())
+    setLoadError(false);
+    getJson<DailyLog>(`/api/daily/${currentDate}`)
       .then(setDailyLog)
-      .catch(() => setDailyLog(null));
+      .catch(() => setLoadError(true));
 
-    fetch('/api/daily')
-      .then((res) => res.json())
+    getJson<DailyLog[]>('/api/daily')
       .then(setAllLogs)
       .catch(() => setAllLogs([]));
 
-    fetch('/api/profile')
-      .then((res) => res.json())
-      .then((data: Profile) => {
+    getJson<Profile>('/api/profile')
+      .then((data) => {
         setProfile(data);
         setNewWeight((prev) => prev || String(data.current_weight_kg));
       })
-      .catch(() => setProfile(null));
+      .catch(() => setLoadError(true));
   }, [currentDate]);
 
   useEffect(() => {
@@ -143,6 +144,10 @@ export default function DashboardPage() {
       next.workout.completed = false;
     }
     await persistLog(next);
+  }
+
+  if (loadError && (!dailyLog || !profile)) {
+    return <LoadError onRetry={loadData} />;
   }
 
   if (!dailyLog || !profile) {
