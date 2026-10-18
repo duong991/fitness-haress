@@ -4,16 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   CalendarDays,
-  Dumbbell,
   Flame,
   ArrowUpRight,
-  ClipboardList,
   Plus,
   Scale,
   TrendingDown,
   UserRound,
-  Utensils,
-  Trash2,
 } from 'lucide-react';
 import { DailyLog, Profile } from '@/lib/data';
 import { isProfileReady } from '@/lib/profile';
@@ -33,10 +29,14 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import LoadError from '@/components/ui/LoadError';
 import { getJson } from '@/lib/fetchJson';
-import { Card, EmptyState, Meter, Pill, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
+import { Card, Meter, Pill, SectionHead, SkeletonRows, type StickerTone } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/Field';
 import { DateSwitcher, PageHeader } from '@/components/ui/PageHeader';
 import TrendCharts from '@/components/TrendCharts';
+import NightBand from '@/components/dashboard/NightBand';
+import PropertyRow from '@/components/dashboard/PropertyRow';
+import MealsSection from '@/components/dashboard/MealsSection';
+import WorkoutSection from '@/components/dashboard/WorkoutSection';
 import { useRecommendation } from '@/lib/useRecommendation';
 
 export default function DashboardPage() {
@@ -204,9 +204,6 @@ export default function DashboardPage() {
     },
   ];
 
-  const workouts = dailyLog.workout;
-  const hasWorkout = Boolean(workouts?.completed && workouts.exercises.length > 0);
-  const hasMeals = Boolean(dailyLog.meals && dailyLog.meals.length > 0);
 
   return (
     <div className="space-y-10 pb-8">
@@ -434,193 +431,18 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── Meals database view ────────────────────────────────────────── */}
-      <section aria-labelledby="meals-heading" className="space-y-4">
-        <SectionHead
-          title={<span id="meals-heading">Bữa ăn trong ngày</span>}
-          meta={`${dailyLog.meals?.length || 0} bữa · ${formatNumber(calConsumed)} kcal đã ghi`}
-          action={
-            <Button variant="utility" size="sm" icon={<Plus />} onClick={() => setIsFoodModalOpen(true)}>
-              Thêm món
-            </Button>
-          }
-        />
+      <MealsSection
+        dailyLog={dailyLog}
+        calConsumed={calConsumed}
+        onAdd={() => setIsFoodModalOpen(true)}
+        onDeleteItem={handleDeleteMealItem}
+      />
 
-        {hasMeals ? (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="db-table min-w-[720px]">
-                <thead>
-                  <tr>
-                    <th>Bữa ăn / Món</th>
-                    <th>Khối lượng</th>
-                    <th className="text-right">Calo</th>
-                    <th className="text-right">Protein</th>
-                    <th className="text-right">Carbs</th>
-                    <th className="text-right">Fat</th>
-                    <th className="w-10" />
-                  </tr>
-                </thead>
-                {dailyLog.meals.map((meal) => {
-                  const cals = meal.items.reduce((s, i) => s + i.calories, 0);
-                  const p = Math.round(meal.items.reduce((s, i) => s + i.protein_g, 0) * 10) / 10;
-                  const c = Math.round(meal.items.reduce((s, i) => s + i.carbs_g, 0) * 10) / 10;
-                  const f = Math.round(meal.items.reduce((s, i) => s + i.fat_g, 0) * 10) / 10;
-
-                  return (
-                    <tbody key={meal.id}>
-                      <tr className="group-row">
-                        <td>
-                          <span className="flex items-center gap-2">
-                            <Utensils className="h-3.5 w-3.5 text-ink-faint" strokeWidth={1.75} />
-                            {meal.name}
-                            <span className="font-metric text-[11px] font-normal text-ink-faint">
-                              {meal.time}
-                            </span>
-                          </span>
-                        </td>
-                        <td className="text-[11px] text-ink-faint">
-                          {meal.items.length} món
-                        </td>
-                        <td className="text-right font-metric font-semibold">{formatNumber(cals)}</td>
-                        <td className="text-right font-metric text-sticker-teal">{formatDecimal(p)}g</td>
-                        <td className="text-right font-metric text-sticker-orange-deep">{formatDecimal(c)}g</td>
-                        <td className="text-right font-metric text-sticker-brown">{formatDecimal(f)}g</td>
-                        <td />
-                      </tr>
-                      {meal.items.map((item, idx) => (
-                        <tr key={`${meal.id}-${idx}`}>
-                          <td className="pl-9 text-ink">{item.name}</td>
-                          <td className="font-metric text-ink-muted">{item.amount_g}g</td>
-                          <td className="text-right font-metric">{formatNumber(item.calories)}</td>
-                          <td className="text-right font-metric text-sticker-teal">
-                            {formatDecimal(item.protein_g)}g
-                          </td>
-                          <td className="text-right font-metric text-sticker-orange-deep">
-                            {formatDecimal(item.carbs_g)}g
-                          </td>
-                          <td className="text-right font-metric text-sticker-brown">
-                            {formatDecimal(item.fat_g)}g
-                          </td>
-                          <td className="text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteMealItem(meal.id, idx)}
-                              aria-label={`Xóa ${item.name}`}
-                              className="row-action inline-flex h-7 w-7 items-center justify-center r-row text-ink-faint transition-colors hover:bg-canvas hover:text-bad"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  );
-                })}
-              </table>
-            </div>
-          </div>
-        ) : (
-          <EmptyState
-            icon={<Utensils />}
-            title="Chưa có bữa ăn nào cho ngày này"
-            description="Nhập tên món kèm số gram, hệ thống sẽ tự tra bảng dinh dưỡng và cộng dồn macro vào file ngày."
-            action={
-              <Button variant="primary" icon={<Plus />} onClick={() => setIsFoodModalOpen(true)}>
-                Thêm bữa ăn
-              </Button>
-            }
-          />
-        )}
-      </section>
-
-      {/* ── Workout database view ──────────────────────────────────────── */}
-      <section aria-labelledby="workout-heading" className="space-y-4">
-        <SectionHead
-          title={<span id="workout-heading">Buổi tập gym hôm nay</span>}
-          meta={
-            hasWorkout
-              ? `${workouts?.session_name ?? 'Buổi tập'} · ${workouts?.duration_minutes ?? 0} phút · tổng volume ${formatNumber(workouts?.total_volume_kg ?? 0)} kg`
-              : 'Chưa ghi set nào cho ngày này'
-          }
-          action={
-            <Button variant="utility" size="sm" icon={<Plus />} onClick={() => setIsWorkoutModalOpen(true)}>
-              Thêm set
-            </Button>
-          }
-        />
-
-        {hasWorkout && workouts ? (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="db-table min-w-[680px]">
-                <thead>
-                  <tr>
-                    <th>Bài tập</th>
-                    <th className="text-right">Mức tạ</th>
-                    <th className="text-right">Reps</th>
-                    <th className="text-right">RPE</th>
-                    <th className="text-right">Volume set</th>
-                    <th className="w-10" />
-                  </tr>
-                </thead>
-                {workouts.exercises.map((ex, exIdx) => (
-                  <tbody key={`${ex.exercise_id}-${exIdx}`}>
-                    <tr className="group-row">
-                      <td>
-                        <span className="flex items-center gap-2">
-                          <Dumbbell className="h-3.5 w-3.5 text-ink-faint" strokeWidth={1.75} />
-                          {ex.exercise_name}
-                        </span>
-                      </td>
-                      <td colSpan={4} className="text-[11px] font-normal text-ink-faint">
-                        {ex.sets.length} set hoàn thành
-                      </td>
-                      <td />
-                    </tr>
-                    {ex.sets.map((set, sIdx) => (
-                      <tr key={`${exIdx}-${sIdx}`}>
-                        <td className="pl-9 text-ink-muted">Set {set.set_number}</td>
-                        <td className="text-right font-metric font-semibold text-ink">
-                          {set.weight_kg} kg
-                        </td>
-                        <td className="text-right font-metric">{set.reps}</td>
-                        <td className="text-right font-metric text-ink-muted">
-                          {set.rpe ? `RPE ${set.rpe}` : '—'}
-                        </td>
-                        <td className="text-right font-metric">
-                          {formatNumber(set.weight_kg * set.reps)} kg
-                        </td>
-                        <td className="text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteWorkoutSet(exIdx, sIdx)}
-                            aria-label={`Xóa set ${set.set_number} của ${ex.exercise_name}`}
-                            className="row-action inline-flex h-7 w-7 items-center justify-center r-row text-ink-faint transition-colors hover:bg-canvas hover:text-bad"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                ))}
-              </table>
-            </div>
-          </div>
-        ) : (
-          <EmptyState
-            icon={<ClipboardList />}
-            title="Chưa ghi set tập nào cho ngày này"
-            description="Mỗi set lưu set number, mức tạ, số reps và RPE. Hệ thống tự so với kỷ lục để cập nhật PR."
-            action={
-              <Button variant="utility" icon={<Plus />} onClick={() => setIsWorkoutModalOpen(true)}>
-                Ghi set tập
-              </Button>
-            }
-          />
-        )}
-      </section>
+      <WorkoutSection
+        dailyLog={dailyLog}
+        onAdd={() => setIsWorkoutModalOpen(true)}
+        onDeleteSet={handleDeleteWorkoutSet}
+      />
 
       {/* ── 7-day trend ────────────────────────────────────────────────── */}
       <TrendCharts
@@ -676,178 +498,6 @@ export default function DashboardPage() {
         date={currentDate}
         onSuccess={loadData}
       />
-    </div>
-  );
-}
-
-/**
- * The one inverted band on the page: deep indigo "night", a sticker
- * constellation, and the single most important number in the product.
- * Elevation here comes from illustration and light, not from shadow.
- */
-function NightBand({
-  remaining,
-  overBudget,
-  consumed,
-  target,
-  progress,
-  dateLabel,
-  relative,
-  onLogWorkout,
-}: {
-  remaining: number;
-  overBudget: boolean;
-  consumed: number;
-  target: number;
-  progress: number;
-  dateLabel: string;
-  relative: string;
-  onLogWorkout: () => void;
-}) {
-  const radius = 46;
-  const circumference = 2 * Math.PI * radius;
-  const dash = (Math.min(100, progress) / 100) * circumference;
-
-  /* Sticker constellation: fixed coordinates so it renders identically on the
-     server and the client. Decorative only, and hidden from assistive tech. */
-  const stickers = [
-    { left: '6%', top: '22%', size: 12, color: 'var(--sticker-purple)' },
-    { left: '13%', top: '68%', size: 8, color: 'var(--sticker-sky)' },
-    { left: '24%', top: '14%', size: 7, color: 'var(--sticker-pink)' },
-    { left: '38%', top: '82%', size: 9, color: 'var(--sticker-teal)' },
-    { left: '52%', top: '10%', size: 6, color: 'var(--sticker-green)' },
-    { left: '63%', top: '74%', size: 11, color: 'var(--sticker-purple)' },
-    { left: '78%', top: '18%', size: 7, color: 'var(--sticker-orange)' },
-    { left: '88%', top: '62%', size: 9, color: 'var(--sticker-sky)' },
-    { left: '94%', top: '30%', size: 6, color: 'var(--sticker-pink)' },
-  ];
-
-  return (
-    <section
-      aria-label="Tổng quan năng lượng hôm nay"
-      className="relative overflow-hidden r-well bg-night text-white"
-    >
-      {/* Decorative depth: two drifting light fields, nothing that moves text. */}
-      <div
-        aria-hidden
-        className="animate-night-drift pointer-events-none absolute inset-0 opacity-70"
-        style={{
-          background:
-            'radial-gradient(60% 120% at 12% 0%, rgba(98,174,240,0.45) 0%, transparent 55%), radial-gradient(50% 110% at 88% 100%, rgba(214,182,246,0.35) 0%, transparent 60%)',
-        }}
-      />
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        {stickers.map((s, i) => (
-          <span
-            key={i}
-            className="absolute r-chip"
-            style={{
-              left: s.left,
-              top: s.top,
-              width: s.size,
-              height: s.size,
-              background: s.color,
-              boxShadow: `0 0 14px ${s.color}`,
-              opacity: 0.85,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.125px] text-white/65">
-            <span className="h-1.5 w-1.5 r-chip bg-white/70" aria-hidden />
-            {relative} · {dateLabel}
-          </p>
-
-          <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-display-2 leading-none text-white sm:text-display-1">
-              {formatNumber(Math.abs(remaining))}
-            </span>
-            <span className="text-body-sm text-white/70">
-              kcal {overBudget ? 'vượt mục tiêu' : 'còn lại hôm nay'}
-            </span>
-          </p>
-
-          <p className="mt-3 max-w-[52ch] text-body-sm text-white/70">
-            Đã nạp {formatNumber(consumed)} / {formatNumber(target)} kcal. Ghi thêm bữa ăn hoặc set tập
-            để cập nhật ngay.
-          </p>
-
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
-            <Button variant="night" icon={<Dumbbell />} onClick={onLogWorkout}>
-              Ghi set tập
-            </Button>
-            <Link
-              href="/tdee"
-              className="inline-flex h-10 items-center gap-1.5 r-chip border border-white/30 px-4 text-body-sm font-medium text-white transition-colors hover:bg-white/10"
-            >
-              Xem TDEE
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Progress ring: light-on-indigo, no filled track behind it. */}
-        <div className="relative flex flex-shrink-0 items-center justify-center self-start lg:self-auto">
-          <svg width="132" height="132" viewBox="0 0 120 120" role="img" aria-label={`Đã nạp ${progress}% mục tiêu calo`}>
-            <circle
-              cx="60"
-              cy="60"
-              r={radius}
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="8"
-            />
-            <circle
-              cx="60"
-              cy="60"
-              r={radius}
-              fill="none"
-              stroke={overBudget ? 'var(--sticker-orange)' : 'var(--sticker-sky)'}
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${circumference}`}
-              transform="rotate(-90 60 60)"
-              style={{ transition: 'stroke-dasharray 400ms cubic-bezier(0.2,0.8,0.2,1)' }}
-            />
-          </svg>
-          <div className="absolute text-center">
-            <p className="font-metric text-heading-3 leading-none text-white">{progress}%</p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.125px] text-white/60">mục tiêu</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/** One row of the Notion-style property list. */
-function PropertyRow({
-  icon: Icon,
-  label,
-  value,
-  meta,
-  action,
-}: {
-  icon: typeof CalendarDays;
-  label: string;
-  value: string;
-  meta?: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex min-w-0 items-start justify-between gap-3">
-      <div className="min-w-0">
-        <dt className="flex items-center gap-1.5 text-[12px] text-ink-faint">
-          <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-          {label}
-        </dt>
-        <dd className="mt-1 truncate font-metric text-[15px] font-semibold text-ink">{value}</dd>
-        {meta ? <dd className="mt-0.5 truncate text-[12px] text-ink-muted">{meta}</dd> : null}
-      </div>
-      {action ? <div className="flex-shrink-0 pt-0.5">{action}</div> : null}
     </div>
   );
 }

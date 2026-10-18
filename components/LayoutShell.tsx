@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRight, Menu, X } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
-import CoachChatDrawer from '@/components/CoachChatDrawer';
+import { NAV } from '@/components/nav';
 import Wordmark from '@/components/Wordmark';
 import { cx } from '@/lib/cx';
 import { TODAY } from '@/lib/format';
@@ -88,15 +88,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           aria-label="Điều hướng di động"
         >
           <ul className="space-y-0.5">
-            {[
-              { name: 'Hôm nay', href: '/' },
-              { name: 'Dinh dưỡng', href: '/food' },
-              { name: 'Buổi tập', href: '/workout' },
-              { name: 'Adaptive TDEE', href: '/tdee' },
-              { name: 'Bài tập & PR', href: '/exercises' },
-              { name: 'Kế hoạch tuần', href: '/plan' },
-              { name: 'Hồ sơ', href: '/profile' },
-            ].map((item) => (
+            {NAV.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
@@ -126,8 +118,6 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           {children}
         </main>
       </div>
-
-      <CoachChatDrawer />
     </div>
   );
 }

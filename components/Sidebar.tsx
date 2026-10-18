@@ -5,17 +5,10 @@ import { usePathname } from 'next/navigation';
 import {
   PanelLeftClose,
   PanelLeftOpen,
-  LayoutDashboard,
-  Salad,
-  Dumbbell,
-  ChartNoAxesCombined,
-  Trophy,
-  UserRound,
-  CalendarRange,
-  type LucideIcon,
 } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import Wordmark from '@/components/Wordmark';
+import { NAV } from '@/components/nav';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -27,27 +20,6 @@ interface SidebarProps {
     date: string;
   } | null;
 }
-
-interface NavItem {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-}
-
-/**
- * §11.C — primary nav labels and routes are frozen; only the chrome and the
- * glyph set changed. Glyphs come from one allowed icon family (lucide), never
- * from emoji and never from a hand-rolled path.
- */
-const NAV: NavItem[] = [
-  { name: 'Hôm nay', href: '/', icon: LayoutDashboard },
-  { name: 'Dinh dưỡng', href: '/food', icon: Salad },
-  { name: 'Buổi tập', href: '/workout', icon: Dumbbell },
-  { name: 'Adaptive TDEE', href: '/tdee', icon: ChartNoAxesCombined },
-  { name: 'Bài tập & PR', href: '/exercises', icon: Trophy },
-  { name: 'Kế hoạch tuần', href: '/plan', icon: CalendarRange },
-  { name: 'Hồ sơ', href: '/profile', icon: UserRound },
-];
 
 export default function Sidebar({ isCollapsed, onToggleCollapse, summary }: SidebarProps) {
   const pathname = usePathname();
