@@ -71,3 +71,9 @@ export function formatDecimal(value: number, digits = 1): string {
 export function estimate1RM(weightKg: number, reps: number): number {
   return Math.round(weightKg * (1 + reps / 30) * 10) / 10;
 }
+
+/** Link to a how-to page for an exercise: the curated guide_url if set, else a YouTube form-tutorial search. */
+export function exerciseGuideUrl(ex: { name: string; guide_url?: string }): string {
+  if (ex.guide_url) return ex.guide_url;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${ex.name} proper form tutorial`)}`;
+}

@@ -58,6 +58,11 @@ function validateProfile(file, optional) {
   validateMacros(file, 'macros_target', p.macros_target);
   if (p.training_days_per_week > 7 || p.training_days_per_week < 0)
     fail(file, 'training_days_per_week must be 0-7');
+  if (p.training_location !== undefined && !['gym', 'home'].includes(p.training_location))
+    fail(file, 'training_location must be gym|home');
+  for (const k of ['injuries', 'avoid_movements', 'equipment'])
+    if (p[k] !== undefined && (!Array.isArray(p[k]) || p[k].some((s) => typeof s !== 'string')))
+      fail(file, `${k} must be an array of strings`);
 }
 
 function validateDaily(file) {
@@ -68,7 +73,13 @@ function validateDaily(file) {
   if (log.date !== name) fail(file, `date "${log.date}" does not match filename`);
   needNums(file, 'log', log, ['calories_target', 'calories_consumed']);
   if (log.weight_kg !== null && !isNum(log.weight_kg)) fail(file, 'weight_kg must be number|null');
+  if (log.sleep_hours !== undefined && log.sleep_hours !== null && (!isNum(log.sleep_hours) || log.sleep_hours < 0 || log.sleep_hours > 24))
+    fail(file, 'sleep_hours must be number 0-24|null');
+  if (log.readiness !== undefined && log.readiness !== null && (!Number.isInteger(log.readiness) || log.readiness < 1 || log.readiness > 5))
+    fail(file, 'readiness must be integer 1-5|null');
   validateMacros(file, 'macros', log.macros);
+  if (log.habits_done !== undefined && (!Array.isArray(log.habits_done) || log.habits_done.some((s) => typeof s !== 'string')))
+    fail(file, 'habits_done must be an array of habit ids');
   if (!Array.isArray(log.meals)) return fail(file, 'meals must be an array');
 
   let kcal = 0;
@@ -105,6 +116,10 @@ function validateExercises(file) {
       if (typeof e[k] !== 'string' || !e[k]) fail(file, `[${i}].${k} must be a non-empty string`);
     if (seen.has(e.id)) fail(file, `duplicate id "${e.id}"`);
     seen.add(e.id);
+    if (e.equipment !== undefined && (!Array.isArray(e.equipment) || e.equipment.some((g) => typeof g !== 'string')))
+      fail(file, `[${i}].equipment must be an array of strings`);
+    if (e.guide_url !== undefined && !/^https?:\/\//.test(e.guide_url))
+      fail(file, `[${i}].guide_url must be an http(s) URL`);
     const pr = e.personal_record;
     if (pr !== undefined) {
       needNums(file, `[${i}].personal_record`, pr, ['weight_kg', 'reps']);
@@ -154,6 +169,25 @@ function validateWeeklyPlan(file) {
   });
 }
 
+function validateHabits(file) {
+  const h = load(file, { optional: true });
+  if (h === undefined) return;
+  if (!Array.isArray(h.habits)) return fail(file, 'habits must be an array');
+  const seen = new Set();
+  h.habits.forEach((x, i) => {
+    if (typeof x.id !== 'string' || !x.id || seen.has(x.id)) fail(file, `habits[${i}].id missing or duplicate`);
+    seen.add(x.id);
+    if (typeof x.name !== 'string' || !x.name) fail(file, `habits[${i}].name must be a non-empty string`);
+  });
+  const c = h.checkin;
+  if (!c || typeof c !== 'object') return fail(file, 'checkin must be an object');
+  needNums(file, 'checkin', c, ['current_streak', 'longest_streak']);
+  if (c.last_checkin_date !== null && !isIsoDate(c.last_checkin_date))
+    fail(file, 'checkin.last_checkin_date must be YYYY-MM-DD|null');
+  return seen;
+}
+
+const habitIds = validateHabits(path.join(ROOT, 'habits.json'));
 validateProfile(path.join(ROOT, 'profile.example.json'), false);
 validateProfile(path.join(ROOT, 'profile.json'), true); // gitignored, absent on fresh clones
 validateExercises(path.join(ROOT, 'exercises.json'));

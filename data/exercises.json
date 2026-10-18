@@ -3,72 +3,286 @@
     "id": "bench_press",
     "name": "Barbell Bench Press",
     "target_muscle": "Chest",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "barbell",
+      "adjustable_bench"
+    ]
   },
   {
     "id": "incline_dumbbell_press",
     "name": "Incline Dumbbell Press",
     "target_muscle": "Upper Chest",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "dumbbell",
+      "adjustable_bench"
+    ]
   },
   {
     "id": "barbell_squat",
     "name": "Barbell Back Squat",
     "target_muscle": "Quads",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "barbell"
+    ]
   },
   {
     "id": "romanian_deadlift",
     "name": "Romanian Deadlift (RDL)",
     "target_muscle": "Hamstrings / Glutes",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "barbell"
+    ]
   },
   {
     "id": "lat_pulldown",
     "name": "Lat Pulldown",
     "target_muscle": "Lats",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "gym_machine"
+    ]
   },
   {
     "id": "barbell_row",
     "name": "Barbell Bent-Over Row",
     "target_muscle": "Back",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "barbell"
+    ]
   },
   {
     "id": "overhead_press",
     "name": "Standing Overhead Press (OHP)",
     "target_muscle": "Shoulders",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "barbell"
+    ]
   },
   {
     "id": "dumbbell_lateral_raise",
     "name": "Dumbbell Lateral Raise",
     "target_muscle": "Side Delts",
-    "category": "Isolation"
+    "category": "Isolation",
+    "equipment": [
+      "dumbbell"
+    ]
   },
   {
     "id": "barbell_bicep_curl",
     "name": "Barbell Bicep Curl",
     "target_muscle": "Biceps",
-    "category": "Isolation"
+    "category": "Isolation",
+    "equipment": [
+      "barbell"
+    ]
   },
   {
     "id": "cable_tricep_pushdown",
     "name": "Cable Tricep Pushdown",
     "target_muscle": "Triceps",
-    "category": "Isolation"
+    "category": "Isolation",
+    "equipment": [
+      "gym_machine"
+    ]
   },
   {
     "id": "leg_press",
     "name": "Leg Press 45°",
     "target_muscle": "Quads",
-    "category": "Compound"
+    "category": "Compound",
+    "equipment": [
+      "gym_machine"
+    ]
   },
   {
     "id": "standing_calf_raise",
     "name": "Standing Calf Raise",
     "target_muscle": "Calves",
-    "category": "Isolation"
+    "category": "Isolation",
+    "equipment": [
+      "gym_machine"
+    ]
+  },
+  {
+    "id": "push_up",
+    "name": "Push-Up",
+    "target_muscle": "Chest",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "decline_push_up",
+    "name": "Feet-Elevated Push-Up",
+    "target_muscle": "Upper Chest",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight",
+      "step_or_chair"
+    ]
+  },
+  {
+    "id": "pike_push_up",
+    "name": "Pike Push-Up",
+    "target_muscle": "Shoulders",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "chair_dip",
+    "name": "Chair Triceps Dip",
+    "target_muscle": "Triceps",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight",
+      "step_or_chair"
+    ]
+  },
+  {
+    "id": "pull_up",
+    "name": "Pull-Up",
+    "target_muscle": "Lats",
+    "category": "Bodyweight",
+    "equipment": [
+      "pullup_bar"
+    ]
+  },
+  {
+    "id": "inverted_row",
+    "name": "Inverted Row (table/bar)",
+    "target_muscle": "Back",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight",
+      "pullup_bar"
+    ]
+  },
+  {
+    "id": "band_row",
+    "name": "Resistance Band Row",
+    "target_muscle": "Back",
+    "category": "Bodyweight",
+    "equipment": [
+      "resistance_band"
+    ]
+  },
+  {
+    "id": "dumbbell_row",
+    "name": "One-Arm Dumbbell Row",
+    "target_muscle": "Back",
+    "category": "Compound",
+    "equipment": [
+      "dumbbell"
+    ]
+  },
+  {
+    "id": "dumbbell_curl",
+    "name": "Dumbbell Bicep Curl",
+    "target_muscle": "Biceps",
+    "category": "Isolation",
+    "equipment": [
+      "dumbbell"
+    ]
+  },
+  {
+    "id": "dumbbell_floor_press",
+    "name": "Dumbbell Floor Press",
+    "target_muscle": "Chest",
+    "category": "Compound",
+    "equipment": [
+      "dumbbell"
+    ]
+  },
+  {
+    "id": "goblet_squat",
+    "name": "Goblet Squat",
+    "target_muscle": "Quads",
+    "category": "Compound",
+    "equipment": [
+      "dumbbell"
+    ]
+  },
+  {
+    "id": "bulgarian_split_squat",
+    "name": "Bulgarian Split Squat",
+    "target_muscle": "Quads",
+    "category": "Compound",
+    "equipment": [
+      "bodyweight",
+      "step_or_chair"
+    ]
+  },
+  {
+    "id": "bodyweight_squat",
+    "name": "Bodyweight Squat",
+    "target_muscle": "Quads",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "walking_lunge",
+    "name": "Walking Lunge",
+    "target_muscle": "Quads",
+    "category": "Compound",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "glute_bridge",
+    "name": "Glute Bridge",
+    "target_muscle": "Glutes",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "single_leg_rdl",
+    "name": "Single-Leg Romanian Deadlift",
+    "target_muscle": "Hamstrings / Glutes",
+    "category": "Compound",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "nordic_curl_negative",
+    "name": "Nordic Curl (negative)",
+    "target_muscle": "Hamstrings",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "bodyweight_calf_raise",
+    "name": "Single-Leg Calf Raise",
+    "target_muscle": "Calves",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight",
+      "step_or_chair"
+    ]
+  },
+  {
+    "id": "plank",
+    "name": "Plank",
+    "target_muscle": "Abs",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight"
+    ]
   }
 ]

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Dumbbell, Plus, Search, SearchX, Trophy, X } from 'lucide-react';
+import { BookOpen, Dumbbell, Plus, Search, SearchX, Trophy, X } from 'lucide-react';
 import { Exercise } from '@/lib/data';
-import { estimate1RM, formatDecimal } from '@/lib/format';
+import { estimate1RM, exerciseGuideUrl, formatDecimal } from '@/lib/format';
 import { cx } from '@/lib/cx';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
@@ -235,6 +235,16 @@ export default function ExercisesPage() {
                       </div>
                       <Pill>{ex.category}</Pill>
                     </div>
+
+                    <a
+                      href={exerciseGuideUrl(ex)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-fit items-center gap-1.5 text-[12px] font-medium text-primary hover:underline"
+                    >
+                      <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Hướng dẫn bài tập
+                    </a>
 
                     {pr ? (
                       <div className="mt-auto border-t border-hairline-soft pt-3">
