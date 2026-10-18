@@ -1,0 +1,24 @@
+{
+  "name": "",
+  "age": 0,
+  "gender": "",
+  "height_cm": 0,
+  "starting_weight_kg": 0,
+  "current_weight_kg": 0,
+  "goal_type": "cut",
+  "target_weight_kg": 0,
+  "weekly_target_rate_kg": 0,
+  "initial_bmr": 0,
+  "current_tdee": 0,
+  "target_calories": 0,
+  "macros_target": {
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0
+  },
+  "training_days_per_week": 0,
+  "split_name": "",
+  "onboarded": false,
+  "updated_at": "",
+  "steps_target": 8000
+}
