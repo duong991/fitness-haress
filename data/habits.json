@@ -1,12 +1,21 @@
 {
   "habits": [
-    { "id": "water", "name": "Uống đủ nước (2.5L)" },
-    { "id": "sleep", "name": "Ngủ đủ 7 tiếng" },
-    { "id": "steps", "name": "Đủ bước chân mục tiêu" }
+    {
+      "id": "water",
+      "name": "Uống đủ nước (2.5L)"
+    },
+    {
+      "id": "sleep",
+      "name": "Ngủ đủ 7 tiếng"
+    },
+    {
+      "id": "steps",
+      "name": "Đủ bước chân mục tiêu"
+    }
   ],
   "checkin": {
-    "current_streak": 0,
-    "longest_streak": 0,
-    "last_checkin_date": null
+    "current_streak": 1,
+    "longest_streak": 1,
+    "last_checkin_date": "2026-10-18"
   }
 }

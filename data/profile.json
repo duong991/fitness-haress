@@ -1,28 +1,68 @@
 {
-  "name": "",
-  "age": 0,
-  "gender": "",
-  "height_cm": 0,
-  "starting_weight_kg": 0,
-  "current_weight_kg": 0,
+  "name": "Kiều",
+  "age": 25,
+  "gender": "female",
+  "height_cm": 154,
+  "starting_weight_kg": 71,
+  "current_weight_kg": 71,
   "goal_type": "cut",
-  "target_weight_kg": 0,
-  "weekly_target_rate_kg": 0,
-  "initial_bmr": 0,
-  "current_tdee": 0,
-  "target_calories": 0,
+  "target_weight_kg": 65,
+  "weekly_target_rate_kg": 0.43,
+  "initial_bmr": 1387,
+  "current_tdee": 1906,
+  "target_calories": 1430,
   "macros_target": {
-    "protein_g": 0,
-    "carbs_g": 0,
-    "fat_g": 0
+    "protein_g": 130,
+    "carbs_g": 110,
+    "fat_g": 52
   },
-  "training_days_per_week": 0,
-  "split_name": "",
-  "training_location": "gym",
-  "equipment": [],
+  "training_days_per_week": 3,
+  "split_name": "Full Body A/B/C (home)",
+  "training_location": "home",
+  "equipment": [
+    "bodyweight",
+    "dumbbell",
+    "resistance_band",
+    "step_or_chair"
+  ],
   "injuries": [],
   "avoid_movements": [],
   "onboarded": false,
-  "updated_at": "",
-  "steps_target": 8000
+  "updated_at": "2026-10-18",
+  "steps_target": 7000,
+  "split_config": {
+    "name": "Full Body A/B/C (home)",
+    "days": [
+      {
+        "name": "Full Body A",
+        "muscles": [
+          "Quads",
+          "Chest",
+          "Back",
+          "Glutes",
+          "Abs"
+        ]
+      },
+      {
+        "name": "Full Body B",
+        "muscles": [
+          "Quads",
+          "Lats",
+          "Shoulders",
+          "Hamstrings",
+          "Side Delts"
+        ]
+      },
+      {
+        "name": "Full Body C",
+        "muscles": [
+          "Quads",
+          "Chest",
+          "Back",
+          "Glutes",
+          "Biceps"
+        ]
+      }
+    ]
+  }
 }

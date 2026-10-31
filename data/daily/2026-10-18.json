@@ -1,0 +1,167 @@
+{
+  "date": "2026-10-18",
+  "weight_kg": 71,
+  "calories_target": 1430,
+  "calories_consumed": 1252,
+  "macros": {
+    "protein_g": 88,
+    "carbs_g": 153.7,
+    "fat_g": 33.3
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Ăn vặt sáng",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Snack konjac cay Moyangxian 魔芋脆 (5 gói × 18g, ~90g ước tính)",
+          "amount_g": 90,
+          "calories": 108,
+          "protein_g": 0.9,
+          "carbs_g": 8.1,
+          "fat_g": 7.2
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Bữa trưa: udon nấm cà chua",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Mì udon Sanuki Topvalu (1 gói 200g, ước tính)",
+          "amount_g": 200,
+          "calories": 210,
+          "protein_g": 5.2,
+          "carbs_g": 43.2,
+          "fat_g": 0.8
+        },
+        {
+          "name": "Cà chua (2 quả vừa + bé, ~210g ước tính)",
+          "amount_g": 210,
+          "calories": 38,
+          "protein_g": 1.9,
+          "carbs_g": 8.2,
+          "fat_g": 0.4
+        },
+        {
+          "name": "Hành khô (4 tép bé, ~25g ước tính)",
+          "amount_g": 25,
+          "calories": 18,
+          "protein_g": 0.6,
+          "carbs_g": 4.2,
+          "fat_g": 0
+        },
+        {
+          "name": "Nấm đùi gà (3 cây bé, ~150g ước tính)",
+          "amount_g": 150,
+          "calories": 53,
+          "protein_g": 4.3,
+          "carbs_g": 9.2,
+          "fat_g": 0.6
+        },
+        {
+          "name": "Nấm hải sản (1 gói, ~150g ước tính)",
+          "amount_g": 150,
+          "calories": 39,
+          "protein_g": 4,
+          "carbs_g": 7.7,
+          "fat_g": 0.6
+        },
+        {
+          "name": "Nấm kim châm (1 gói, ~150g ước tính)",
+          "amount_g": 150,
+          "calories": 56,
+          "protein_g": 4,
+          "carbs_g": 11.7,
+          "fat_g": 0.5
+        },
+        {
+          "name": "Trứng gà (1 quả ~55g)",
+          "amount_g": 55,
+          "calories": 85,
+          "protein_g": 7.2,
+          "carbs_g": 0.6,
+          "fat_g": 6
+        },
+        {
+          "name": "Dầu ăn (ít, ~1 thìa cà phê ~5g ước tính)",
+          "amount_g": 5,
+          "calories": 44,
+          "protein_g": 0,
+          "carbs_g": 0,
+          "fat_g": 5
+        }
+      ]
+    },
+    {
+      "id": "dinner",
+      "name": "Bữa tối: udon ức gà nấm",
+      "time": "19:00",
+      "items": [
+        {
+          "name": "Mì udon Sanuki Topvalu (1 gói 200g, ước tính)",
+          "amount_g": 200,
+          "calories": 210,
+          "protein_g": 5.2,
+          "carbs_g": 43.2,
+          "fat_g": 0.8
+        },
+        {
+          "name": "Cà chua (~100g)",
+          "amount_g": 100,
+          "calories": 18,
+          "protein_g": 0.9,
+          "carbs_g": 3.9,
+          "fat_g": 0.2
+        },
+        {
+          "name": "Hành khô (2 tép, ~12g ước tính)",
+          "amount_g": 12,
+          "calories": 9,
+          "protein_g": 0.3,
+          "carbs_g": 2,
+          "fat_g": 0
+        },
+        {
+          "name": "Ức gà sống (hơn 200g, tính 220g, USDA)",
+          "amount_g": 220,
+          "calories": 264,
+          "protein_g": 49.5,
+          "carbs_g": 0,
+          "fat_g": 5.7
+        },
+        {
+          "name": "Nấm kim châm (1 gói, ~150g ước tính)",
+          "amount_g": 150,
+          "calories": 56,
+          "protein_g": 4,
+          "carbs_g": 11.7,
+          "fat_g": 0.5
+        },
+        {
+          "name": "Dầu ăn (ít, ~1 thìa cà phê ~5g ước tính)",
+          "amount_g": 5,
+          "calories": 44,
+          "protein_g": 0,
+          "carbs_g": 0,
+          "fat_g": 5
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 7000,
+  "steps_target": 7000,
+  "notes": "",
+  "habits_done": [
+    "steps"
+  ]
+}

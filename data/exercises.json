@@ -284,5 +284,42 @@
     "equipment": [
       "bodyweight"
     ]
+  },
+  {
+    "id": "knee_push_up",
+    "name": "Knee Push-Up",
+    "target_muscle": "Chest",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight"
+    ]
+  },
+  {
+    "id": "band_lat_pulldown",
+    "name": "Resistance Band Lat Pulldown",
+    "target_muscle": "Lats",
+    "category": "Compound",
+    "equipment": [
+      "resistance_band"
+    ]
+  },
+  {
+    "id": "band_overhead_press",
+    "name": "Resistance Band Overhead Press",
+    "target_muscle": "Shoulders",
+    "category": "Compound",
+    "equipment": [
+      "resistance_band"
+    ]
+  },
+  {
+    "id": "chair_hip_thrust",
+    "name": "Hip Thrust (back on chair)",
+    "target_muscle": "Glutes",
+    "category": "Bodyweight",
+    "equipment": [
+      "bodyweight",
+      "step_or_chair"
+    ]
   }
 ]
