@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-31",
+  "weight_kg": null,
+  "calories_target": 1430,
+  "calories_consumed": 1268,
+  "macros": {
+    "protein_g": 49.8,
+    "carbs_g": 185.7,
+    "fat_g": 34.8
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Sáng: phở gà + bánh ngọt",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Phở gà nhiều hành (1 bát ~400g ước tính)",
+          "amount_g": 400,
+          "calories": 400,
+          "protein_g": 24.8,
+          "carbs_g": 55.2,
+          "fat_g": 8.8
+        },
+        {
+          "name": "Bánh ngọt (2 cái, ~300 kcal theo người dùng, macro ước tính)",
+          "amount_g": 100,
+          "calories": 300,
+          "protein_g": 4,
+          "carbs_g": 40,
+          "fat_g": 13
+        }
+      ]
+    },
+    {
+      "id": "afternoon",
+      "name": "Chiều: cháo sườn",
+      "time": "15:00",
+      "items": [
+        {
+          "name": "Cháo trắng (2 bát con, ~500g ước tính)",
+          "amount_g": 500,
+          "calories": 230,
+          "protein_g": 5,
+          "carbs_g": 48,
+          "fat_g": 1
+        },
+        {
+          "name": "Sườn heo (ít, ~50g phần thịt ước tính)",
+          "amount_g": 50,
+          "calories": 145,
+          "protein_g": 12,
+          "carbs_g": 0,
+          "fat_g": 11
+        }
+      ]
+    },
+    {
+      "id": "drinks",
+      "name": "Đồ uống",
+      "time": "20:00",
+      "items": [
+        {
+          "name": "Nước dừa (500ml)",
+          "amount_g": 500,
+          "calories": 95,
+          "protein_g": 3.5,
+          "carbs_g": 18.5,
+          "fat_g": 1
+        },
+        {
+          "name": "Nước ép xoài–chanh leo (1 chai 350ml, ~98 kcal, ~20g đường)",
+          "amount_g": 350,
+          "calories": 98,
+          "protein_g": 0.5,
+          "carbs_g": 24,
+          "fat_g": 0
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 8000,
+  "steps_target": 7000,
+  "notes": "Nước lọc 1L + nước dừa 500ml + nước ép 350ml.",
+  "habits_done": [
+    "steps"
+  ]
+}
