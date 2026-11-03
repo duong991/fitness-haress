@@ -1,0 +1,154 @@
+{
+  "date": "2026-11-02",
+  "weight_kg": 71,
+  "calories_target": 1430,
+  "calories_consumed": 2075,
+  "macros": {
+    "protein_g": 74.8,
+    "carbs_g": 255.9,
+    "fat_g": 83.8
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Sáng: trứng + sữa ADM",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Trứng gà luộc (1 quả ~55g)",
+          "amount_g": 55,
+          "calories": 85,
+          "protein_g": 7.2,
+          "carbs_g": 0.6,
+          "fat_g": 6
+        },
+        {
+          "name": "Sữa dinh dưỡng Vinamilk ADM Sôcôla (2 hộp × 180ml)",
+          "amount_g": 360,
+          "calories": 322,
+          "protein_g": 10.4,
+          "carbs_g": 45.7,
+          "fat_g": 10.8
+        }
+      ]
+    },
+    {
+      "id": "snack1",
+      "name": "Ăn vặt: bò chay xé sợi",
+      "time": "10:00",
+      "items": [
+        {
+          "name": "Thịt bò chay xé sợi BBQ (1 gói nhỏ, ~15g ước tính)",
+          "amount_g": 15,
+          "calories": 37,
+          "protein_g": 3.3,
+          "carbs_g": 1.2,
+          "fat_g": 2.1
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Trưa: cơm gạo lứt, thịt xay xào măng",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Cơm gạo lứt nấu chín (~100g)",
+          "amount_g": 100,
+          "calories": 111,
+          "protein_g": 2.6,
+          "carbs_g": 23,
+          "fat_g": 0.9
+        },
+        {
+          "name": "Thịt lợn xay xào (~120g sống, USDA ước tính)",
+          "amount_g": 120,
+          "calories": 316,
+          "protein_g": 20.3,
+          "carbs_g": 0,
+          "fat_g": 25.4
+        },
+        {
+          "name": "Măng + rau củ hỗn hợp (~150g ước tính)",
+          "amount_g": 150,
+          "calories": 45,
+          "protein_g": 2.3,
+          "carbs_g": 9,
+          "fat_g": 0.3
+        },
+        {
+          "name": "Dầu xào (~5g ước tính)",
+          "amount_g": 5,
+          "calories": 44,
+          "protein_g": 0,
+          "carbs_g": 0,
+          "fat_g": 5
+        }
+      ]
+    },
+    {
+      "id": "snack2",
+      "name": "Chiều: bim bim",
+      "time": "15:30",
+      "items": [
+        {
+          "name": "Oishi Snack tôm cay đặc biệt (1 gói 68g, macro ước tính)",
+          "amount_g": 68,
+          "calories": 333,
+          "protein_g": 4.1,
+          "carbs_g": 43.5,
+          "fat_g": 15.6
+        }
+      ]
+    },
+    {
+      "id": "dinner",
+      "name": "Tối: cháo trai quẩy, hạt dẻ, ổi",
+      "time": "19:00",
+      "items": [
+        {
+          "name": "Cháo trai (1 bát ~400g ước tính)",
+          "amount_g": 400,
+          "calories": 240,
+          "protein_g": 14,
+          "carbs_g": 36,
+          "fat_g": 4
+        },
+        {
+          "name": "Quẩy (1 chiếc ~50g ước tính)",
+          "amount_g": 50,
+          "calories": 195,
+          "protein_g": 3.5,
+          "carbs_g": 22.5,
+          "fat_g": 10
+        },
+        {
+          "name": "Hạt dẻ nướng (100g phần ăn được, USDA)",
+          "amount_g": 100,
+          "calories": 245,
+          "protein_g": 3.2,
+          "carbs_g": 53,
+          "fat_g": 2.2
+        },
+        {
+          "name": "Ổi (1 quả vừa ~150g ước tính)",
+          "amount_g": 150,
+          "calories": 102,
+          "protein_g": 3.9,
+          "carbs_g": 21.4,
+          "fat_g": 1.5
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 3500,
+  "steps_target": 7000,
+  "notes": "Nước ~2L."
+}
