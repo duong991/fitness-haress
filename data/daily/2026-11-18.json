@@ -1,0 +1,147 @@
+{
+  "date": "2026-11-18",
+  "weight_kg": 71,
+  "calories_target": 1430,
+  "calories_consumed": 1527,
+  "macros": {
+    "protein_g": 109.6,
+    "carbs_g": 138.1,
+    "fat_g": 61.5
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Sáng: táo + 1 hộp sữa Vinamilk cà phê",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Táo (258g, ~52 kcal/100g)",
+          "amount_g": 258,
+          "calories": 134,
+          "protein_g": 0.8,
+          "carbs_g": 35.6,
+          "fat_g": 0.5
+        },
+        {
+          "name": "Sữa tươi tiệt trùng Vinamilk hộp xanh lá, có cà phê (240ml, nhãn 69.8 kcal/100ml)",
+          "amount_g": 240,
+          "calories": 168,
+          "protein_g": 7,
+          "carbs_g": 16.6,
+          "fat_g": 8.2
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Trưa: cơm gạo lứt + cơm trắng, su su xào cà rốt, thịt ba chỉ kho tàu",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Cơm gạo lứt nấu chín (80g)",
+          "amount_g": 80,
+          "calories": 89,
+          "protein_g": 2.1,
+          "carbs_g": 18.4,
+          "fat_g": 0.7
+        },
+        {
+          "name": "Cơm trắng nấu chín (50g)",
+          "amount_g": 50,
+          "calories": 65,
+          "protein_g": 1.4,
+          "carbs_g": 14.1,
+          "fat_g": 0.2
+        },
+        {
+          "name": "Su su xào cà rốt (80g, ~60g su su + ~20g cà rốt, ước tính)",
+          "amount_g": 80,
+          "calories": 19,
+          "protein_g": 0.7,
+          "carbs_g": 4.6,
+          "fat_g": 0.1
+        },
+        {
+          "name": "Dầu xào rau (~5g ước tính)",
+          "amount_g": 5,
+          "calories": 44,
+          "protein_g": 0,
+          "carbs_g": 0,
+          "fat_g": 5
+        },
+        {
+          "name": "Thịt ba chỉ kho tàu (130g, ước tính ~320 kcal/100g, sai số lớn)",
+          "amount_g": 130,
+          "calories": 417,
+          "protein_g": 18.2,
+          "carbs_g": 3.9,
+          "fat_g": 36.4
+        }
+      ]
+    },
+    {
+      "id": "snack",
+      "name": "Ăn vặt: củ đậu + ổi",
+      "time": "15:30",
+      "items": [
+        {
+          "name": "Củ đậu (nửa củ, ~150g ước tính, ~38 kcal/100g)",
+          "amount_g": 150,
+          "calories": 57,
+          "protein_g": 1,
+          "carbs_g": 13.5,
+          "fat_g": 0.1
+        },
+        {
+          "name": "Ổi (1 quả vừa ~150g ước tính)",
+          "amount_g": 150,
+          "calories": 102,
+          "protein_g": 3.9,
+          "carbs_g": 21.4,
+          "fat_g": 1.5
+        }
+      ]
+    },
+    {
+      "id": "dinner",
+      "name": "Tối: ức gà ướp muối tiêu, cà chua, hành khô",
+      "time": "19:00",
+      "items": [
+        {
+          "name": "Ức gà sống (322g cân lúc sống, ~120 kcal/100g theo USDA)",
+          "amount_g": 322,
+          "calories": 386,
+          "protein_g": 72.5,
+          "carbs_g": 0,
+          "fat_g": 8.4
+        },
+        {
+          "name": "Cà chua sống (188g)",
+          "amount_g": 188,
+          "calories": 34,
+          "protein_g": 1.7,
+          "carbs_g": 7.3,
+          "fat_g": 0.4
+        },
+        {
+          "name": "Hành khô sống (29g)",
+          "amount_g": 29,
+          "calories": 12,
+          "protein_g": 0.3,
+          "carbs_g": 2.7,
+          "fat_g": 0
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 6200,
+  "steps_target": 7000,
+  "notes": "Chưa cân sáng 18/11, weight_kg dùng số ~71 của 17/11. Giờ ăn là ước lượng. Khối lượng củ đậu và ổi là ước tính. Chưa ghi lượng nước uống."
+}
