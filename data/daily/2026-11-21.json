@@ -1,0 +1,132 @@
+{
+  "date": "2026-11-21",
+  "weight_kg": 71,
+  "calories_target": 1430,
+  "calories_consumed": 1523,
+  "macros": {
+    "protein_g": 98.9,
+    "carbs_g": 177,
+    "fat_g": 45
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Sáng: phô mai Kiri + ổi",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Phô mai Kiri (1 khối ~15g, tính ~250 kcal/100g; người dùng nhớ nhãn ghi 15, cần đối chiếu)",
+          "amount_g": 15,
+          "calories": 37,
+          "protein_g": 1.3,
+          "carbs_g": 0.6,
+          "fat_g": 3.3
+        },
+        {
+          "name": "Ổi (nửa quả, ~75g ước tính)",
+          "amount_g": 75,
+          "calories": 51,
+          "protein_g": 1.9,
+          "carbs_g": 10.7,
+          "fat_g": 0.8
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Trưa: ức gà, cà chua, hành khô, hủ tiếu khô",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Ức gà sống (200g cân lúc sống, ~120 kcal/100g theo USDA)",
+          "amount_g": 200,
+          "calories": 240,
+          "protein_g": 45,
+          "carbs_g": 0,
+          "fat_g": 5.2
+        },
+        {
+          "name": "Cà chua (1 quả ~90g ước tính)",
+          "amount_g": 90,
+          "calories": 16,
+          "protein_g": 0.8,
+          "carbs_g": 3.5,
+          "fat_g": 0.2
+        },
+        {
+          "name": "Hành khô (2 tép ~10g ước tính)",
+          "amount_g": 10,
+          "calories": 4,
+          "protein_g": 0.1,
+          "carbs_g": 0.9,
+          "fat_g": 0
+        },
+        {
+          "name": "Hủ tiếu khô (150g, giả định cân lúc còn khô, ~360 kcal/100g)",
+          "amount_g": 150,
+          "calories": 540,
+          "protein_g": 9,
+          "carbs_g": 120,
+          "fat_g": 0.9
+        }
+      ]
+    },
+    {
+      "id": "dinner",
+      "name": "Tối: cơm, thịt băm xào mắm tép, trứng rán, rau xào nấm, ức gà xào",
+      "time": "19:00",
+      "items": [
+        {
+          "name": "Cơm trắng nấu chín (1 bát con ~120g ước tính)",
+          "amount_g": 120,
+          "calories": 156,
+          "protein_g": 3.2,
+          "carbs_g": 33.8,
+          "fat_g": 0.4
+        },
+        {
+          "name": "Thịt băm xào mắm tép (80g, ước tính thịt lợn xay như ngày 02/11)",
+          "amount_g": 80,
+          "calories": 215,
+          "protein_g": 13.8,
+          "carbs_g": 1,
+          "fat_g": 17
+        },
+        {
+          "name": "Trứng rán thịt băm (2 trong 8 miếng, mẻ gồm 3 trứng + 20g thịt băm + ~8g dầu rán, ước tính)",
+          "amount_g": 60,
+          "calories": 95,
+          "protein_g": 6.3,
+          "carbs_g": 0.5,
+          "fat_g": 7.6
+        },
+        {
+          "name": "Rau xào nấm (~150g rau nấm + ~5g dầu, ước tính)",
+          "amount_g": 150,
+          "calories": 70,
+          "protein_g": 3,
+          "carbs_g": 6,
+          "fat_g": 5
+        },
+        {
+          "name": "Ức gà xào (3 miếng nhỏ ~60g ước tính, ~3g dầu)",
+          "amount_g": 60,
+          "calories": 99,
+          "protein_g": 13.5,
+          "carbs_g": 0,
+          "fat_g": 4.6
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 11000,
+  "steps_target": 7000,
+  "notes": "Chưa cân sáng 21/11 nên weight_kg dùng ~71. Giờ ăn là ước lượng. Chưa ghi lượng nước. Hủ tiếu khô 150g giả định cân lúc khô; nếu là đã nấu chín thì giảm khoảng 375 kcal."
+}

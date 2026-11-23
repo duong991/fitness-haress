@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-20",
+  "weight_kg": 71,
+  "calories_target": 1430,
+  "calories_consumed": 833,
+  "macros": {
+    "protein_g": 35.6,
+    "carbs_g": 104.1,
+    "fat_g": 28.6
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Sáng: mì Hảo Hảo + trứng",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Mì ăn liền Hảo Hảo (1 hộp, ~298 kcal theo người dùng nhớ, macro ước tính)",
+          "amount_g": 0,
+          "calories": 298,
+          "protein_g": 6.4,
+          "carbs_g": 41.5,
+          "fat_g": 10.6
+        },
+        {
+          "name": "Trứng gà (1 quả ~55g)",
+          "amount_g": 55,
+          "calories": 85,
+          "protein_g": 7.2,
+          "carbs_g": 0.6,
+          "fat_g": 6
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Trưa: bún cá chấm",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Bún cá chấm (1 phần, ước tính ~450 kcal, sai số lớn)",
+          "amount_g": 0,
+          "calories": 450,
+          "protein_g": 22,
+          "carbs_g": 62,
+          "fat_g": 12
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 5000,
+  "steps_target": 7000,
+  "notes": "Chưa cân sáng 20/11, weight_kg dùng ~71. Giờ ăn là ước lượng. Không ăn tối. Chưa ghi lượng nước."
+}

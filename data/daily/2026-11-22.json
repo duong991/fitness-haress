@@ -1,0 +1,132 @@
+{
+  "date": "2026-11-22",
+  "weight_kg": 70.8,
+  "calories_target": 1430,
+  "calories_consumed": 1861,
+  "macros": {
+    "protein_g": 70,
+    "carbs_g": 216,
+    "fat_g": 80.5
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Sáng: hủ tiếu khô, nấm xào rau cải, kim chi, ức gà",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Nấm xào rau cải (~80g ước tính)",
+          "amount_g": 80,
+          "calories": 20,
+          "protein_g": 2,
+          "carbs_g": 3,
+          "fat_g": 0.3
+        },
+        {
+          "name": "Dầu xào (~4g ước tính)",
+          "amount_g": 4,
+          "calories": 35,
+          "protein_g": 0,
+          "carbs_g": 0,
+          "fat_g": 4
+        },
+        {
+          "name": "Hủ tiếu khô (70g, giả định cân lúc còn khô, ~360 kcal/100g)",
+          "amount_g": 70,
+          "calories": 252,
+          "protein_g": 4.2,
+          "carbs_g": 56,
+          "fat_g": 0.4
+        },
+        {
+          "name": "Kim chi (~50g ước tính)",
+          "amount_g": 50,
+          "calories": 8,
+          "protein_g": 0.5,
+          "carbs_g": 1.5,
+          "fat_g": 0.1
+        },
+        {
+          "name": "Ức gà sống (100g cân lúc sống, ~120 kcal/100g theo USDA)",
+          "amount_g": 100,
+          "calories": 120,
+          "protein_g": 22.5,
+          "carbs_g": 0,
+          "fat_g": 2.6
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Trưa: gà rang gừng, thịt ba chỉ quay, bánh trôi, hồng giòn",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Thịt gà rang gừng (1 miếng ~50g, ước tính)",
+          "amount_g": 50,
+          "calories": 110,
+          "protein_g": 9,
+          "carbs_g": 2,
+          "fat_g": 7
+        },
+        {
+          "name": "Thịt ba chỉ quay (6-7 miếng ~18g/miếng, ~117g, ước tính ~400 kcal/100g, sai số lớn)",
+          "amount_g": 117,
+          "calories": 466,
+          "protein_g": 16,
+          "carbs_g": 0.5,
+          "fat_g": 44.5
+        },
+        {
+          "name": "Bánh trôi (6 viên cả nước đường, ước tính)",
+          "amount_g": 0,
+          "calories": 300,
+          "protein_g": 4,
+          "carbs_g": 66,
+          "fat_g": 2
+        },
+        {
+          "name": "Hồng giòn (3 quả vừa, ~120g phần ăn được/quả, ước tính ~70 kcal/100g)",
+          "amount_g": 360,
+          "calories": 250,
+          "protein_g": 1.8,
+          "carbs_g": 66,
+          "fat_g": 0.6
+        }
+      ]
+    },
+    {
+      "id": "dinner",
+      "name": "Tối: kem AEON matcha, trứng thịt băm lá lốt rán",
+      "time": "19:00",
+      "items": [
+        {
+          "name": "Kem AEON vị matcha (1 cây, ước tính ~150 kcal, chưa có số liệu nhãn)",
+          "amount_g": 0,
+          "calories": 150,
+          "protein_g": 2,
+          "carbs_g": 20,
+          "fat_g": 7
+        },
+        {
+          "name": "Trứng trộn lá lốt thịt băm rán (1.5 khoanh ~75g, ước tính)",
+          "amount_g": 75,
+          "calories": 150,
+          "protein_g": 8,
+          "carbs_g": 1,
+          "fat_g": 12
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 5000,
+  "steps_target": 7000,
+  "notes": "Cân sáng 22/11: 70.8 kg. Giờ ăn là ước lượng. Chưa ghi lượng nước. Nhiều món ước tính sai số lớn (ba chỉ quay, bánh trôi, kem, trứng lá lốt)."
+}

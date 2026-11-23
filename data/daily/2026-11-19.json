@@ -1,0 +1,100 @@
+{
+  "date": "2026-11-19",
+  "weight_kg": 71,
+  "calories_target": 1430,
+  "calories_consumed": 1881,
+  "macros": {
+    "protein_g": 71.7,
+    "carbs_g": 202.6,
+    "fat_g": 86.5
+  },
+  "meals": [
+    {
+      "id": "breakfast",
+      "name": "Sáng: 2 hộp sữa chuối Vinamilk",
+      "time": "08:00",
+      "items": [
+        {
+          "name": "Sữa tươi tiệt trùng Vinamilk hương chuối (2 hộp x 180ml = 360ml, nhãn 64.1 kcal/100ml)",
+          "amount_g": 360,
+          "calories": 231,
+          "protein_g": 10.4,
+          "carbs_g": 27,
+          "fat_g": 9
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Trưa: cơm gạo lứt, su su xào cà rốt, thịt ba chỉ kho tàu, quýt",
+      "time": "12:00",
+      "items": [
+        {
+          "name": "Cơm gạo lứt nấu chín (100g)",
+          "amount_g": 100,
+          "calories": 111,
+          "protein_g": 2.6,
+          "carbs_g": 23,
+          "fat_g": 0.9
+        },
+        {
+          "name": "Su su xào cà rốt (88g, ước tính)",
+          "amount_g": 88,
+          "calories": 21,
+          "protein_g": 0.8,
+          "carbs_g": 5.1,
+          "fat_g": 0.1
+        },
+        {
+          "name": "Dầu xào rau (~5g ước tính)",
+          "amount_g": 5,
+          "calories": 44,
+          "protein_g": 0,
+          "carbs_g": 0,
+          "fat_g": 5
+        },
+        {
+          "name": "Thịt ba chỉ kho tàu (118g, ước tính ~320 kcal/100g, sai số lớn)",
+          "amount_g": 118,
+          "calories": 379,
+          "protein_g": 16.5,
+          "carbs_g": 3.5,
+          "fat_g": 33
+        },
+        {
+          "name": "Quýt (3 quả nhỏ, ~60g phần ăn được/quả, ước tính ~53 kcal/100g)",
+          "amount_g": 180,
+          "calories": 95,
+          "protein_g": 1.4,
+          "carbs_g": 24,
+          "fat_g": 0.5
+        }
+      ]
+    },
+    {
+      "id": "dinner",
+      "name": "Tối: buffet pizza",
+      "time": "19:00",
+      "items": [
+        {
+          "name": "Buffet pizza (không rõ số miếng, ước tính ~4 miếng, ~1.000 kcal, sai số lớn)",
+          "amount_g": 0,
+          "calories": 1000,
+          "protein_g": 40,
+          "carbs_g": 120,
+          "fat_g": 38
+        }
+      ]
+    }
+  ],
+  "workout": {
+    "completed": false,
+    "session_name": "",
+    "duration_minutes": 0,
+    "total_volume_kg": 0,
+    "exercises": []
+  },
+  "steps": 5000,
+  "steps_target": 7000,
+  "notes": "Cân sáng 19/11: 71.0 kg. Giờ ăn là ước lượng. Bữa tối buffet pizza là ước tính, vượt mục tiêu. Chưa ghi lượng nước."
+}

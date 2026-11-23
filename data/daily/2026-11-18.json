@@ -2,11 +2,11 @@
   "date": "2026-11-18",
   "weight_kg": 71,
   "calories_target": 1430,
-  "calories_consumed": 1527,
+  "calories_consumed": 1095,
   "macros": {
-    "protein_g": 109.6,
-    "carbs_g": 138.1,
-    "fat_g": 61.5
+    "protein_g": 35.1,
+    "carbs_g": 128.1,
+    "fat_g": 52.7
   },
   "meals": [
     {
@@ -101,37 +101,6 @@
           "fat_g": 1.5
         }
       ]
-    },
-    {
-      "id": "dinner",
-      "name": "Tối: ức gà ướp muối tiêu, cà chua, hành khô",
-      "time": "19:00",
-      "items": [
-        {
-          "name": "Ức gà sống (322g cân lúc sống, ~120 kcal/100g theo USDA)",
-          "amount_g": 322,
-          "calories": 386,
-          "protein_g": 72.5,
-          "carbs_g": 0,
-          "fat_g": 8.4
-        },
-        {
-          "name": "Cà chua sống (188g)",
-          "amount_g": 188,
-          "calories": 34,
-          "protein_g": 1.7,
-          "carbs_g": 7.3,
-          "fat_g": 0.4
-        },
-        {
-          "name": "Hành khô sống (29g)",
-          "amount_g": 29,
-          "calories": 12,
-          "protein_g": 0.3,
-          "carbs_g": 2.7,
-          "fat_g": 0
-        }
-      ]
     }
   ],
   "workout": {
@@ -141,7 +110,7 @@
     "total_volume_kg": 0,
     "exercises": []
   },
-  "steps": 6200,
+  "steps": 0,
   "steps_target": 7000,
-  "notes": "Chưa cân sáng 18/11, weight_kg dùng số ~71 của 17/11. Giờ ăn là ước lượng. Khối lượng củ đậu và ổi là ước tính. Chưa ghi lượng nước uống."
+  "notes": "Chưa cân sáng 18/11, weight_kg dùng số ~71 của 17/11. Giờ ăn là ước lượng. Bữa tối chưa ghi. Khối lượng củ đậu và ổi là ước tính."
 }
